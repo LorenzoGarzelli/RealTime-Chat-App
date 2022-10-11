@@ -1,7 +1,7 @@
 import express, { Express, Request, RequestHandler, Response } from 'express';
 import morgan from 'morgan';
 import AppError from './utils/appError';
-
+import GlobalErrorHandler from './controllers/errorController';
 const userRouter: RequestHandler = require('./routes/userRoutes');
 const app: Express = express();
 
@@ -9,6 +9,13 @@ app.use(express.json({ limit: '10kb' }));
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// app.use('*', (req, res, next) => {
+//   //@ts-ignore
+//   req.timeStamp = Date.now();
+
+//   next();
+// });
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Express + Typescript 🍕');
@@ -21,5 +28,6 @@ app.all('*', (req, res, next) => {
 });
 
 // Global Error handling Middleware
+app.use(GlobalErrorHandler);
 
 export { app };

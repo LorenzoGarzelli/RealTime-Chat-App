@@ -6,7 +6,8 @@
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/server.js",
-    "dev": "concurrently \"npx tsc --watch\" \" NODE_ENV=development nodemon --delay 200ms dist/server.js\""
+    "dev": "concurrently \"npx tsc --watch\" \" NODE_ENV=development nodemon --delay 200ms dist/server.js\"",
+    "prod": "concurrently \"npx tsc --watch\" \" NODE_ENV=production nodemon --delay 200ms dist/server.js\""
   },
   "keywords": [],
   "author": "",

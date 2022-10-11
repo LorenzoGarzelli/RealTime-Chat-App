@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 
-//@ts-ignore
 import { UserModel as User } from '../models/Users/users.model';
 import { User as UserType } from '../models/Users/users.types';
+import { ControllerMiddleware } from '../types/types';
 
 import jwt, { Jwt } from 'jsonwebtoken';
 import { Sms } from './../utils/sms';
@@ -11,17 +11,12 @@ import { promisify } from 'util';
 
 const catchAsync = require('../utils/catchAsync');
 
-type ControllerMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => any;
-
 interface AuthControllerType {
   signup: ControllerMiddleware;
   accountActivation: ControllerMiddleware;
   protect: ControllerMiddleware;
   login: ControllerMiddleware;
+  restrictTo: (...roles: [string]) => any;
 }
 
 const signToken = (id: string) => {
@@ -82,6 +77,26 @@ class AuthController implements AuthControllerType {
       await newUser.save({ validateBeforeSave: false });
 
       createSendToken(newUser, 201, req, res);
+    }
+  );
+
+  login = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { phoneNumber, password } = req.body;
+
+      if (!phoneNumber || !password)
+        return next(
+          new AppError('Please provide phoneNumber and password', 400)
+        );
+
+      const user = await User.findOne({ phoneNumber }).select('+password');
+
+      //@ts-ignore
+      if (!user || !(await user.correctPassword(password, user.password))) {
+        return next(new AppError('Incorrect phoneNumber or password', 401));
+      }
+
+      createSendToken(user, 200, req, res);
     }
   );
 
@@ -148,6 +163,7 @@ class AuthController implements AuthControllerType {
         );
 
       // 4) Check if user changed password after the token was issued
+
       //@ts-ignore
       if (currentUser.changedPasswordAfter(decoded.iat))
         return next(
@@ -156,6 +172,7 @@ class AuthController implements AuthControllerType {
             401
           )
         );
+
       //@ts-ignore
       req.user = currentUser;
       res.locals.user = currentUser;
@@ -164,25 +181,17 @@ class AuthController implements AuthControllerType {
     }
   );
 
-  login = catchAsync(
-    async (req: Request, res: Response, next: NextFunction) => {
-      const { phoneNumber, password } = req.body;
-
-      if (!phoneNumber || !password)
-        return next(
-          new AppError('Please provide phoneNumber and password', 400)
-        );
-
-      const user = await User.findOne({ phoneNumber }).select('+password');
-
+  restrictTo = (...roles: [string]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+      //TODO FIX rew.user
       //@ts-ignore
-      if (!user || !(await user.correctPassword(password, user.password))) {
-        return next(new AppError('Incorrect phoneNumber or password', 401));
+      if (!roles.includes(req.user.role)) {
+        return next(
+          new AppError('You do not have permission to perform this action', 403)
+        );
       }
-
-      createSendToken(user, 200, req, res);
-    }
-  );
+    };
+  };
 }
 
 const authController = new AuthController();

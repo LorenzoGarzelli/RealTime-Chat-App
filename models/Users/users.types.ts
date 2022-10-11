@@ -10,7 +10,8 @@ export interface User {
   passwordConfirm: string | undefined;
   passwordChangedAt?: Date;
   accountStatus: string;
-  //TODO friends?: ObjectId[];
+  role: string;
+  friends?: ObjectId[];
 }
 
 export interface User {}

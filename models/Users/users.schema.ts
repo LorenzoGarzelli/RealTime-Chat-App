@@ -57,9 +57,15 @@ const UserSchema = new Schema<User>(
       select: false,
     },
 
-    //TODO  friends: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
-  }
-  //TODO { toJSON: { virtuals: true }, toObject: { virtuals: true } }
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+
+    friends: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
+  },
+  { toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 //? Password Hashing
@@ -127,7 +133,14 @@ UserSchema.methods.activateAccount = function () {
 };
 
 //TODO CreatePasswordResetToken
-//TODO CreatePhoneNumberVerificationCode entry
+
+//TODO Populate
+// UserSchema.pre(/^find/, function (next) {
+//   this.populate({
+//     path: 'friends',
+//     select: '-__v -passwordChangedAt',
+//   });
+// });
 
 export default UserSchema;
 
