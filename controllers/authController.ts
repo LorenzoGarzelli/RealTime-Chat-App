@@ -4,12 +4,12 @@ import { UserModel as User } from '../models/Users/users.model';
 import { User as UserType } from '../models/Users/users.types';
 import { ControllerMiddleware } from '../types/types';
 
-import jwt, { Jwt } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { Sms } from './../utils/sms';
 import AppError from './../utils/appError';
 import { promisify } from 'util';
 
-const catchAsync = require('../utils/catchAsync');
+import catchAsync from '../utils/catchAsync';
 
 interface AuthControllerType {
   signup: ControllerMiddleware;
@@ -190,6 +190,7 @@ class AuthController implements AuthControllerType {
           new AppError('You do not have permission to perform this action', 403)
         );
       }
+      next();
     };
   };
 }

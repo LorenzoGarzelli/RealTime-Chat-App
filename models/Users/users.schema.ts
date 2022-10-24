@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 import { User } from './users.types';
 import validator from 'validator';
 import bcrypt from 'bcryptjs';
+import { FriendShipsModel } from '../FriendShips/friendships.model';
 
 const UserSchema = new Schema<User>(
   {
@@ -12,7 +13,6 @@ const UserSchema = new Schema<User>(
       unique: true,
       lowercase: true,
       validate: [validator.isEmail, 'Please provide a valid email'],
-      //TODO Add email Validation
     },
 
     phoneNumber: {
@@ -23,7 +23,6 @@ const UserSchema = new Schema<User>(
         validator.isMobilePhone,
         'Please provide a valid mobileNumber phone',
       ],
-      //TODO Add phoneNumber Validation
     },
     phoneNumberVerificationCode: {
       type: String,
@@ -40,8 +39,6 @@ const UserSchema = new Schema<User>(
       required: [true, 'Please confirm your password'],
       validate: {
         validator: function (el: String): boolean {
-          //@ts-ignore
-
           //@ts-ignore
           return el == this.password;
         },
@@ -63,7 +60,20 @@ const UserSchema = new Schema<User>(
       default: 'user',
     },
 
-    friends: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
+    /*friends: [
+      {
+        type: {
+          _id: Schema.Types.ObjectId,
+          friendShipStatus: {
+            type: String,
+            enum: ['bonded', 'pending'],
+            default: 'pending',
+          },
+        },
+        ref: 'User',
+        default: [],
+      },
+    ],*/
   },
   { toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -80,7 +90,7 @@ UserSchema.pre('save', async function (next) {
   next();
 });
 
-//? Password Modification detection
+//? Password Modification detection Middleware
 //@ts-ignore
 UserSchema.pre('save', function (next) {
   if (!this.isModified('password') || this.isNew) return next();
@@ -90,10 +100,17 @@ UserSchema.pre('save', function (next) {
   next();
 });
 
+UserSchema.pre('save', async function (next) {
+  if (this.isNew) {
+    await FriendShipsModel.create({ _id: this.id });
+  }
+  next();
+});
+
 //? Query middleware for showing up only active users
 UserSchema.pre(/^find/, function (next) {
   //@ts-ignore
-  this.find({ active: { $ne: 'disabled' } });
+  this.find({ accountStatus: { $ne: 'disabled' } });
   next();
 });
 
@@ -134,15 +151,14 @@ UserSchema.methods.activateAccount = function () {
 
 //TODO CreatePasswordResetToken
 
-//TODO Populate
+//TODO Fix Population
 // UserSchema.pre(/^find/, function (next) {
 //   this.populate({
 //     path: 'friends',
 //     select: '-__v -passwordChangedAt',
 //   });
+
+//   next();
 // });
 
 export default UserSchema;
-
-// const User = mongoose.model('User', UserSchema);
-// module.exports = User;

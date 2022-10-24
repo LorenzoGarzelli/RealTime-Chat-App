@@ -17,7 +17,6 @@ export class Sms {
   constructor(to: string) {
     //this.body = body;
     this.to = to;
-
     this.otpLength = +process.env.OTP_LENGTH!;
     this.twiloPhoneNumber = process.env.TWILO_PHONE_NUMBER!;
   }
@@ -36,12 +35,14 @@ export class Sms {
     if (this.to && this.twiloPhoneNumber) {
       const otp = this.generateOtp();
 
-      const body = SMS_VERIFICATION_TEMPLATE.replace('#CODE', otp);
-      const message = await client.messages.create({
-        body: body,
-        to: this.to,
-        from: this.twiloPhoneNumber,
-      });
+      if (process.env.NODE_ENV === 'production') {
+        const body = SMS_VERIFICATION_TEMPLATE.replace('#CODE', otp);
+        const message = await client.messages.create({
+          body: body,
+          to: this.to,
+          from: this.twiloPhoneNumber,
+        });
+      }
 
       return otp;
     }

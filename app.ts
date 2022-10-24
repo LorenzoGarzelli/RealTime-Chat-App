@@ -1,5 +1,6 @@
 import express, { Express, Request, RequestHandler, Response } from 'express';
 import morgan from 'morgan';
+
 import AppError from './utils/appError';
 import GlobalErrorHandler from './controllers/errorController';
 const userRouter: RequestHandler = require('./routes/userRoutes');
@@ -9,7 +10,6 @@ app.use(express.json({ limit: '10kb' }));
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
-
 // app.use('*', (req, res, next) => {
 //   //@ts-ignore
 //   req.timeStamp = Date.now();

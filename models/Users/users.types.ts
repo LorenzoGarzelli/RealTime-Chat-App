@@ -11,7 +11,7 @@ export interface User {
   passwordChangedAt?: Date;
   accountStatus: string;
   role: string;
-  friends?: ObjectId[];
+  //friends?: ObjectId[];
 }
 
 export interface User {}
