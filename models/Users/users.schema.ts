@@ -3,6 +3,7 @@ import { User } from './users.types';
 import validator from 'validator';
 import bcrypt from 'bcryptjs';
 import { FriendShipsModel } from '../FriendShips/friendships.model';
+import { randomUUID } from 'crypto';
 
 const UserSchema = new Schema<User>(
   {
@@ -59,21 +60,11 @@ const UserSchema = new Schema<User>(
       enum: ['user', 'admin'],
       default: 'user',
     },
-
-    /*friends: [
-      {
-        type: {
-          _id: Schema.Types.ObjectId,
-          friendShipStatus: {
-            type: String,
-            enum: ['bonded', 'pending'],
-            default: 'pending',
-          },
-        },
-        ref: 'User',
-        default: [],
-      },
-    ],*/
+    roomId: {
+      type: String,
+      unique: true,
+      default: randomUUID(),
+    },
   },
   { toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

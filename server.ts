@@ -5,7 +5,7 @@ import sendMessageHandlers from './webSockets/sendMessageHandlers';
 
 import { app } from './app';
 import initializeConnection from './webSockets/initializeConnection';
-import { randomUUID } from 'crypto';
+import middlewareList from './webSockets/middlewares';
 
 dotenv.config({ path: './config.env' });
 
@@ -36,22 +36,7 @@ const server = app.listen(port, () => {
 });
 const io = new Server(server);
 
-io.use((socket: Socket, next) => {
-  //const userID = socket.handshake.auth.userID;
-  console.log(socket.handshake.headers);
-  const userID = socket.handshake.headers.userid;
-  if (userID) {
-    console.log(userID);
-    //@ts-ignore
-    socket.userID = userID;
-    return next();
-  }
-  //@ts-ignore
-  socket.userID = randomUUID();
-
-  next();
-});
-
+//? Socket Io
 const OnConnection = (socket: Socket) => {
   initializeConnection(io, socket);
   sendMessageHandlers(io, socket);
@@ -61,6 +46,10 @@ const OnConnection = (socket: Socket) => {
     console.log('user disconnected');
   });
 };
+
+//? Loading middleware
+middlewareList.forEach(mid => io.use(mid));
+
 //TODO Implement Socket Io Auth
 io.on('connection', OnConnection);
 
@@ -75,12 +64,3 @@ process.on('SIGTERM', () => {
     console.log('Process terminated');
   });
 });
-
-// process.on('SIGINT', () => {
-//   console.log('SIGINT RECEIVED');
-//   server.close(() => {
-//     console.log('Process terminated');
-//   });
-
-//   process.kill(process.pid, 'SIGINT');
-// });

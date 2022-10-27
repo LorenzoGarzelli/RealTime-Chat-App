@@ -183,7 +183,7 @@ class AuthController implements AuthControllerType {
 
   restrictTo = (...roles: [string]) => {
     return (req: Request, res: Response, next: NextFunction) => {
-      //TODO FIX rew.user
+      req.user;
       //@ts-ignore
       if (!roles.includes(req.user.role)) {
         return next(
