@@ -1,0 +1,33 @@
+.container {
+  display: flex;
+  position: relative;
+  background-color: blue;
+  align-items: center;
+  padding: 1em;
+  justify-content: space-between;
+}
+
+.contact-box {
+  width: 80%;
+}
+.contact-name {
+}
+
+.profile-img {
+  width: 80px;
+  height: 80px;
+}
+
+.last-message-timestamp {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+}
+.last-message-intro {
+  /* bottom: 5px; */
+  /* left: 105px; */
+  width: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
