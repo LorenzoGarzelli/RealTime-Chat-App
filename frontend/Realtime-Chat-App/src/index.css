@@ -13,6 +13,8 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+
+  --primary-color: #282828;
 }
 /* 
 a {
@@ -29,6 +31,10 @@ body {
   padding: 0;
 }
 
+.back-btn {
+  font-size: 3em;
+  color: white;
+}
 /*
 h1 {
   font-size: 3.2em;

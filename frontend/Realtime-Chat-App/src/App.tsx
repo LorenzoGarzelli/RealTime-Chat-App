@@ -1,12 +1,15 @@
-import { useState } from 'react';
-import reactLogo from './assets/react.svg';
+import { Route, Routes } from 'react-router-dom';
 import './App.css';
-import ContactList from './components/contactList/ContactList';
+import Chat from './pages/Chat';
+import ChatsList from './pages/ChatsList';
 
 function App() {
   return (
     <div className="App">
-      <ContactList />
+      <Routes>
+        <Route path="/" element={<ChatsList />} />
+        <Route path="chat/:userId" element={<Chat />} />
+      </Routes>
     </div>
   );
 }

@@ -1,16 +1,27 @@
+* {
+  text-decoration: none;
+  color: white;
+}
+
 .container {
+  max-width: 700px;
+  min-width: 300px;
   display: flex;
   position: relative;
-  background-color: blue;
+  background-color: var(--primary-color);
   align-items: center;
   padding: 1em;
-  justify-content: space-between;
+  border: 2px solid red;
+  /* justify-content: space-between; */
+  gap: 20px;
 }
 
 .contact-box {
-  width: 80%;
+  width: 82%;
 }
 .contact-name {
+  margin: 0;
+  margin-bottom: 0.5em;
 }
 
 .profile-img {
@@ -23,10 +34,9 @@
   top: 30px;
   right: 30px;
 }
-.last-message-intro {
-  /* bottom: 5px; */
-  /* left: 105px; */
-  width: 10px;
+.last-message-preview {
+  display: inline-block;
+  width: 80%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
