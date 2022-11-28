@@ -11,12 +11,15 @@ import { Sms } from './../utils/sms';
 import AppError from './../utils/appError';
 
 import catchAsync from '../utils/catchAsync';
+import { decode } from 'punycode';
 
 interface AuthControllerType {
   signup: ControllerMiddleware;
   accountActivation: ControllerMiddleware;
   protect: ControllerMiddleware;
   login: ControllerMiddleware;
+  isLoggedIn: ControllerMiddleware;
+  logout: ControllerMiddleware;
   forgotPassword: ControllerMiddleware;
   resetPassword: ControllerMiddleware;
   restrictTo: (...roles: [string]) => any;
@@ -103,6 +106,50 @@ class AuthController implements AuthControllerType {
     }
   );
 
+  logout = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      res.cookie('jwt', 'null', {
+        expires: new Date(Date.now() - 10 * 1000),
+        httpOnly: true,
+      });
+
+      res.status(200).end();
+    }
+  );
+  isLoggedIn = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      let token = undefined;
+      if (req.headers.authorization?.startsWith('Bearer'))
+        token = req.headers.authorization.split(' ')[1];
+      else if (req.cookies?.jwt) {
+        token = req.cookies.jwt;
+      }
+
+      if (!token) {
+        return res.status(200).json({ isLoggedIn: false });
+      }
+
+      const decoded = await promisify(jwt.verify)(
+        token,
+        // @ts-ignore
+        process.env.JWT_SECRET
+      );
+
+      // Check if user still exists
+
+      //@ts-ignore
+      const currentUser = await User.findById(decoded.id)
+        .select('-password')
+        .select('-passwordChangedAt');
+      if (!currentUser) return next();
+
+      // 3) Check if user changed password after the token was issued
+      //@ts-ignore
+      if (currentUser.changedPasswordAfter(decoded.iat)) return next();
+
+      res.status(200).json({ currentUser, isLoggedIn: true });
+    }
+  );
   accountActivation = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
       //@ts-ignore
