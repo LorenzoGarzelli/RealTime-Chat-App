@@ -16,7 +16,7 @@ type ErrorControllerMiddleware = (
 ) => any;
 
 type Message = {
-  id: string;
+  uuid: string;
   content: string;
   to: string;
   from: string;

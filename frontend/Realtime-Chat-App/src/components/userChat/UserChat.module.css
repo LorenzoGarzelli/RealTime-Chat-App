@@ -23,7 +23,9 @@
   align-items: center;
   justify-content: space-evenly;
 }
-
+.messagesContainer {
+  padding-top: 30px;
+}
 form {
   display: flex;
 }

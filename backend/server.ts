@@ -7,8 +7,7 @@ import sendMessageHandlers from './webSockets/sendMessageHandlers';
 import { app } from './app';
 import initializeConnection from './webSockets/initializeConnection';
 import middlewareList from './webSockets/middlewares';
-import { createAdapter } from '@socket.io/redis-adapter';
-import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+
 import messagesAck from './webSockets/messages-ack';
 
 dotenv.config({ path: './config.env' });
@@ -48,7 +47,7 @@ const subClient = pubClient.duplicate();
 
 let io: Server;
 //Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
-io = new Server(server /*,{ adapter: createAdapter(pubClient, subClient) }*/);
+io = new Server(server, { cors: { origin: 'http://localhost:5173' } }); //TODO Adjust cors policy
 
 //? Socket Io
 const OnConnection = (socket: Socket) => {

@@ -4,8 +4,8 @@ import redisMessageStore from '../utils/redisMessageStore';
 export default async (io: Server, socket: Socket) => {
   //@ts-ignore
   socket.join(socket.roomId);
-  //@ts-ignore
 
+  //@ts-ignore
   const messages = await redisMessageStore.findMessagesForUser(socket.roomId);
   socket.emit('session', {
     //@ts-ignore

@@ -1,5 +1,5 @@
 import { redirect, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 
 const fetcher = (...args: string[]) =>
@@ -16,8 +16,9 @@ export default function useUser({
 } = {}) {
   let navigate = useNavigate();
   const { data, mutate } = useSWR('/api/v1/users/isLoggedIn', fetcher);
-
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
+    if (data) setIsLoading(false);
     if (!redirectTo || !data) return;
     if (
       (redirectTo && !redirectIfFound && !data?.isLoggedIn) ||
@@ -29,5 +30,5 @@ export default function useUser({
     // console.log(data);
   }, [data, redirectIfFound, redirectTo, mutate]);
 
-  return { ...data, mutate };
+  return { ...data, isLoading, mutate };
 }

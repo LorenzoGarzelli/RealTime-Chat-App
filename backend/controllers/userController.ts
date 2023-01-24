@@ -37,7 +37,8 @@ class UserController implements UserControllerType {
         const user = await User.findById(req.params.userId);
         if (!user) return next(new AppError('No user found with that Id', 404));
 
-        /* //@ts-ignore
+        /*
+         //@ts-ignore
         const result = await User.findById(req.user.id).update(
           //@ts-ignore
           { _id: req.user.id },
@@ -54,7 +55,7 @@ class UserController implements UserControllerType {
 
         await FriendShipsModel.findById(user._id).updateOne({
           //@ts-ignore
-          $addToSet: { friends: { _id: req.user.id } },
+          $addToSet: { friends: { from: req.user.id } },
         });
 
         //TODO Add functionality
@@ -83,17 +84,16 @@ class UserController implements UserControllerType {
   replyToFriendShipRequest = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
       if (req.params.userId) {
-        //TODO Finish this
         //@ts-ignore
         const { accepted } = req.query;
         const friendShipRequest = await FriendShipsModel.find(
           {
             //@ts-ignore
             _id: req.user.id,
-            'friends._id': req.params.userId,
+            'friends.from': req.params.userId,
             'friends.status': { $ne: 'bonded' },
           },
-          { _id: 0, friends: { $elemMatch: { _id: req.params.userId } } }
+          { _id: 0, friends: { $elemMatch: { from: req.params.userId } } }
         );
 
         if (!friendShipRequest.length)
@@ -109,33 +109,43 @@ class UserController implements UserControllerType {
           updateFriendShipQueries.push(
             FriendShipsModel.updateOne(
               //@ts-ignore
-              { _id: req.user.id, 'friends._id': req.params.userId },
+              { _id: req.user.id, 'friends.from': req.params.userId },
               {
-                $set: { 'friends.$.status': 'bonded' },
+                $set: {
+                  'friends.$.status': 'bonded',
+                  'friends.$.user': req.params.userId,
+                  // 'friends.$from': null,
+                },
+                $unset: {
+                  'friends.$.from': '',
+                },
               }
             )
           );
 
           updateFriendShipQueries.push(
             new Promise((resolve, reject) => {
-              //Check if a friendShip request send from this user already exist
+              //? Check if a friendShip request send from this user already exist
               FriendShipsModel.updateOne(
                 {
                   _id: req.params.userId,
                   //@ts-ignore
-                  'friends._id': req.user.id,
+                  'friends.from': req.user.id,
                 },
                 {
                   $set: {
-                    'friends.$': {
-                      //@ts-ignore
-                      _id: req.user.id,
-                      status: 'bonded',
-                    },
+                    'friends.$.status': 'bonded',
+                    //@ts-ignore
+                    'friends.$.user': req.user.id,
+                    // 'friends.$from': null,
+                  },
+
+                  $unset: {
+                    'friends.$.from': '',
                   },
                 }
               ).then((res: any) => {
-                if (res.nModified) resolve(res);
+                if (res.modifiedCount) return resolve(res);
                 FriendShipsModel.updateOne(
                   {
                     _id: req.params.userId,
@@ -144,7 +154,7 @@ class UserController implements UserControllerType {
                   {
                     $addToSet: {
                       //@ts-ignore
-                      friends: { _id: req.user.id, status: 'bonded' },
+                      friends: { user: req.user.id, status: 'bonded' },
                     },
                   }
                 ).then(res => resolve(res));
@@ -154,13 +164,13 @@ class UserController implements UserControllerType {
 
           await Promise.all(updateFriendShipQueries);
         } else if (accepted == 'false') {
-          // delete the friendShip request
+          //? delete the friendShip request
 
           await FriendShipsModel.updateOne(
             //@ts-ignore
             { _id: req.user.id },
             {
-              $pull: { friends: { _id: req.params.userId } },
+              $pull: { friends: { from: req.params.userId } },
             }
           );
         }

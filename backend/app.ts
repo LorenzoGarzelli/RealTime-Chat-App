@@ -1,7 +1,7 @@
 import express, { Express, Request, RequestHandler, Response } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
-
+import cookieParser from 'cookie-parser';
 import AppError from './utils/appError';
 import GlobalErrorHandler from './controllers/errorController';
 const userRouter: RequestHandler = require('./routes/userRoutes');
@@ -14,6 +14,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use(cors());
+app.options('*', cors());
+app.use(cookieParser());
+//app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // app.use('*', (req, res, next) => {
 //   //@ts-ignore

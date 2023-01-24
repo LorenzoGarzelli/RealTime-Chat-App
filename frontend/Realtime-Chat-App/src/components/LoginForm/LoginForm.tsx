@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MuiTelInput, matchIsValidTel } from 'mui-tel-input';
 import { useAuth } from '../../store/auth-context';
 import useUser from '../../hooks/use-user';
+
 type Inputs = {
   phoneNumber: string;
   password: string;
@@ -44,9 +45,13 @@ const LoginForm = () => {
       headers: { 'Content-type': 'application/json' },
     });
     if (res.status === 200) {
-      const { data } = await res.json();
+      const data = await res.json();
       //auth.signin(data.user);
-      console.log(data);
+      localStorage.setItem('token', data.token);
+      const { user } = data.data;
+      localStorage.setItem('roomId', user.roomId);
+
+      // console.log(data);
       navigate('/', { replace: true });
     }
   };

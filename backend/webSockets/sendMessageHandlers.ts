@@ -4,18 +4,23 @@ import { Message } from '../types/types';
 import redisMessageStore from '../utils/redisMessageStore';
 
 export default (io: Server, socket: Socket) => {
-  socket.on('chat message', (message: Message) => {
+  socket.on('chat message', (message: Message, callback) => {
     //.to(socket.userID)
     //@ts-ignore
     message.from = socket.roomId;
-    const { to, content, timestamp, from } = message;
+    const { to, content, timestamp, from, uuid } = message;
 
     socket.to(to).emit('chat message', {
-      id: randomUUID(), //TODO the id field must be generated on client side
+      uuid, //TODO the id field must be generated on client side
       content,
       timestamp,
       from,
     });
+    //? Send Ack To User
+    if (callback)
+      callback({
+        status: 'received from server',
+      });
 
     redisMessageStore.saveMessage(message);
   });

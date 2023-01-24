@@ -43,10 +43,11 @@ const createSendToken = (
       Date.now() + +process.env.JWT_COOKIE_EXPIRES_IN! * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
+
     secure: false,
   };
 
-  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  // if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
   cookieOptions.secure =
     req.secure || req.headers['x-forwareded-proto'] === 'https';
 
@@ -56,6 +57,7 @@ const createSendToken = (
   //?Sanitize User Object before sending it
   user.password = undefined;
   user.phoneNumberVerificationCode = undefined;
+  user.passwordChangedAt = undefined;
 
   res.status(statusCode).json({
     status: 'success',

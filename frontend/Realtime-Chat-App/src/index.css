@@ -56,6 +56,9 @@ html {
   color: var(--flue-blue);
   transition: opacity 2;
 }
+i {
+  cursor: pointer;
+}
 .MuiInputBase-root {
   display: block;
   border: 1px solid rgb(229, 224, 224);

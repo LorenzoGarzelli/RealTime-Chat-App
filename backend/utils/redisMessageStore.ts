@@ -49,11 +49,23 @@ class RedisMessageStore {
   }
 
   deleteMessages(socketId: string, messages: Message[]) {
-    console.time('messages');
-    messages.forEach(message =>
-      this.client.lRem(`message:${socketId}`, 1, JSON.stringify(message))
-    );
-    console.timeEnd('messages');
+    // console.time('messages');
+
+    messages.forEach(message => {
+      this.client
+        .multi()
+        .rPush(
+          `ack:${message.from}`,
+          JSON.stringify({ uuid: message.uuid, to: message.to })
+        )
+        .expire(
+          `message:${message.to}`,
+          Number(process.env.CONVERSATION_TTL) || 86400
+        )
+        .exec();
+      this.client.lRem(`message:${socketId}`, 1, JSON.stringify(message));
+    });
+    // console.timeEnd('messages');
 
     //this.client.del(keys);
   }

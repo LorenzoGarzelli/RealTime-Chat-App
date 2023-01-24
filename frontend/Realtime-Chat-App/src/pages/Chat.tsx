@@ -4,11 +4,7 @@ import useUser from '../hooks/use-user';
 const Chat = () => {
   const { currentUser: user, isLoggedIn } = useUser({ redirectTo: '/login' });
 
-  return (
-    <>
-      <UserChat />
-    </>
-  );
+  return <UserChat />;
 };
 
 export default Chat;

@@ -10,6 +10,7 @@ export default (io: Server, socket: Socket) => {
     //messages.forEach(sender =>
     //  socket.to(sender.to).emit('messages received ack', 'Messages received ')
     //);
+
     redisMessageStore.deleteMessages(socket.roomId, messages);
   });
 };
