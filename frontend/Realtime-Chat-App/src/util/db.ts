@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie';
-
+import { MessageStatus, MessageType } from '../types';
 export interface User {
   _id: string;
   name: string;
@@ -10,8 +10,8 @@ export type Message = {
   content: string;
   timestamp: string;
   id?: number;
-  type: 'received' | 'sent';
-  status: 'read' | 'to read' | 'sent' | 'sending';
+  type: MessageType;
+  status: MessageStatus;
 };
 
 const MessageDBFields = '++id ,&uuid, status, type';
@@ -48,10 +48,10 @@ export class DbController extends Dexie {
     // });
     // this.open();
 
-    this.open().then(async () => {
+    /*this.open().then(async () => {
       console.log('DB', this);
       this.addFriendStore();
-    });
+    });*/
   }
   async loadCurrentSchema() {
     const currentSchema = this.tables.reduce((result, { name, schema }) => {

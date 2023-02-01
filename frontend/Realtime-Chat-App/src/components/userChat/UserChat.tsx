@@ -5,11 +5,9 @@ import { motion } from 'framer-motion';
 import { useContext, useEffect, useId, useRef, useState } from 'react';
 import Message from './Message';
 import { SocketContext } from '../../store/socket-context';
-import useIndexDB from '../../hooks/use-indexDB';
-import { db, Message as MessageData } from '../../util/db';
-import { getFormSubmissionInfo } from 'react-router-dom/dist/dom';
+import { db, Message as MessageData, User } from '../../util/db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { findNumbers } from 'libphonenumber-js';
+import { useEffectOnce } from '../../hooks/use-effect-once';
 
 const UserChat = () => {
   const { userId } = useParams();
@@ -109,8 +107,53 @@ const UserChat = () => {
     );
   };
 
-  //? Auto-scrolling down on messages
+  //? Sending Ack on page mounts
+  useEffectOnce(() => {
+    const sendAcks = async () => {
+      await (async () => await db.open())();
 
+      const messages: Array<MessageData> = await db
+        .table(`chat-${userId}`)
+        .where('type')
+        .equals('received')
+        .and((msg: MessageData) => msg.status == 'to read')
+        .toArray();
+      // console.log('Messages', messages);
+
+      const userRoomId = await db
+        .table('friends')
+        .where('_id')
+        //@ts-ignore
+        .equals(userId)
+        .toArray()
+        .then((res: Array<User>) => res[0].roomId);
+      console.log(messages);
+
+      for (let msg of messages) {
+        socket.emit(
+          'messages ack',
+          {
+            uuid: msg.uuid,
+            status: 'read',
+            from: userRoomId,
+          },
+          (res: any) => {
+            db.table(`chat-${userId}`)
+              .where('uuid')
+              .equals(msg.uuid)
+              .modify({ status: 'read' });
+          }
+        );
+      }
+    };
+    sendAcks();
+    // //TODO Fix Clean-Up Function
+    // return () => {
+    //   if (!isEffectCalled) return;
+    // };
+  });
+
+  //? Auto-scrolling down on messages
   useEffect(() => {
     if (chatFeedRef && messagesList.length > 0) {
       let bounding = chatFeedRef.current!.getBoundingClientRect();
