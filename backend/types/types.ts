@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-import { type } from 'os';
 import AppError from '../utils/appError';
 
 type ControllerMiddleware = (
@@ -21,6 +20,18 @@ type Message = {
   to: string;
   from: string;
   timestamp: string;
+  status?: MessageStatus;
 };
 
-export { ControllerMiddleware, ErrorControllerMiddleware, Message };
+type MessageAck = {
+  uuid: string;
+  to: string;
+  from: string;
+  status: MessageStatus;
+};
+
+export type MessageStatus = 'read' | 'to read' | 'sent' | 'sending';
+
+export type MessageType = 'received' | 'sent';
+
+export { ControllerMiddleware, ErrorControllerMiddleware, Message, MessageAck };

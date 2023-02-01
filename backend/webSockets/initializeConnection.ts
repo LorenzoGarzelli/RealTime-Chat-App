@@ -7,9 +7,12 @@ export default async (io: Server, socket: Socket) => {
 
   //@ts-ignore
   const messages = await redisMessageStore.findMessagesForUser(socket.roomId);
+  //@ts-ignore
+  const acks = await redisMessageStore.findAcksForUser(socket.roomId);
   socket.emit('session', {
     //@ts-ignore
     userId: socket.roomId,
     messages,
+    acks,
   });
 };

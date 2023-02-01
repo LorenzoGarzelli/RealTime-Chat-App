@@ -15,6 +15,7 @@ export default (io: Server, socket: Socket) => {
       content,
       timestamp,
       from,
+      to,
     });
     //? Send Ack To User
     if (callback)

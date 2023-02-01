@@ -54,7 +54,6 @@ const OnConnection = (socket: Socket) => {
   initializeConnection(io, socket);
   sendMessageHandlers(io, socket);
   messagesAck(io, socket);
-  io.emit('Welcome', 'Benvenuto');
 
   socket.on('disconnect', () => {
     console.log('user disconnected');
