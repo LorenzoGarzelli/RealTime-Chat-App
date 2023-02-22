@@ -118,7 +118,6 @@ const UserChat = () => {
         .equals('received')
         .and((msg: MessageData) => msg.status == 'to read')
         .toArray();
-      // console.log('Messages', messages);
 
       const userRoomId = await db
         .table('friends')
@@ -127,7 +126,7 @@ const UserChat = () => {
         .equals(userId)
         .toArray()
         .then((res: Array<User>) => res[0].roomId);
-      console.log(messages);
+      //console.log(messages);
 
       for (let msg of messages) {
         socket.emit(
@@ -147,10 +146,6 @@ const UserChat = () => {
       }
     };
     sendAcks();
-    // //TODO Fix Clean-Up Function
-    // return () => {
-    //   if (!isEffectCalled) return;
-    // };
   });
 
   //? Auto-scrolling down on messages
@@ -175,15 +170,10 @@ const UserChat = () => {
         } else
           chatFeedRef.current?.scrollIntoView({
             behavior: 'smooth',
-            // block: 'end',
           });
-
-        //@ts-ignore
-
-        // chatFeedRef.current?.scrollIntoView();
       }
     }
-  }, [messagesList]);
+  }, [messagesList, chatFeedRef]);
 
   return (
     <motion.div

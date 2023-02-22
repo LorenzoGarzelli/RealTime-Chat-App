@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { AnimatePresence } from 'framer-motion';
@@ -11,7 +11,7 @@ import Login from './pages/Login';
 import { AuthProvider } from './store/auth-context';
 import RequireAuth from './util/RequireAuth';
 import { SocketContext, socket } from './store/socket-context';
-import useIndexDB from './hooks/use-indexDB';
+
 import { ErrorBoundary } from 'react-error-boundary';
 
 function App() {
@@ -22,6 +22,7 @@ function App() {
   //   return <h1>ERRORE</h1>;
   // };
   // console.log(location.pathname);
+
   //TODO Hidden chats page on navigation (for caching it)
   return (
     <div className="App">

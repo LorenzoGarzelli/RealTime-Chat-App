@@ -24,12 +24,14 @@ export class DbController extends Dexie {
 
   constructor() {
     super('chat-app');
-    this.changeSchema({ friends: FriendDBField });
 
+    //TODO Fix issues on db creation
     // this.version(1).stores({
-    //   //   //friends: '++_id, name, rommId',
-    //   friends: '&_id,&roomId',
+    //   //friends: '++_id, name, rommId',
+    //   friends: FriendDBField,
     // });
+    this.open();
+    this.changeSchema({ friends: FriendDBField });
     // this.on('versionchange', event => {
     //   if (
     //     confirm(
@@ -114,6 +116,7 @@ export class DbController extends Dexie {
   }
   //@ts-ignore
   async changeSchema(schemaChanges) {
+    await this.open();
     this.close();
 
     // this = DbController.staticHelpert();
@@ -127,6 +130,11 @@ export class DbController extends Dexie {
     //   return await this.open();
     // }
 
+    if (db.tables.length === 0) {
+      await this.delete();
+      this.version(1).stores(schemaChanges);
+      return await this.open();
+    }
     // Extract current schema in dexie format:
     const currentSchema = this.tables.reduce((result, { name, schema }) => {
       //@ts-ignore

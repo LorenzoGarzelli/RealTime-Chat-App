@@ -2,7 +2,7 @@ import React from 'react';
 import { io } from 'socket.io-client';
 import { MessageReceived, MessageAck } from '../types';
 import { User, db, Message as MessageData } from './../util/db';
-// import { useQuery } from 'react-query';
+
 export const socket = io('http://localhost:8000', {
   transports: ['websocket'],
   auth: {
@@ -31,25 +31,42 @@ const getUserId = async (userRoomId: string) => {
 };
 socket.on('session', async data => {
   const messages: Array<MessageReceived> = data.messages;
+  const acks: Array<MessageAck> = data.acks;
 
   await (async () => await db.open())();
   let userId;
-  messages.map(msg => (msg.status = 'to read'));
-  for (let message of messages) {
-    userId = await getUserId(message.from);
-    db.table(`chat-${userId}`)
-      .add({
-        uuid: message.uuid,
-        // timestamp: message.timestamp,
-        timestamp: Date.now(),
-        content: message.content,
-        type: 'received',
-        status: 'to read',
-      })
-      .then(() => {
-        socket.emit('messages ack', message);
-      });
-  }
+  //messages.map(msg => (msg.status = 'to read'));
+  //? Save received messages to local db
+  if (messages)
+    for (let message of messages) {
+      userId = await getUserId(message.from);
+      db.table(`chat-${userId}`)
+        .add({
+          uuid: message.uuid,
+          // timestamp: message.timestamp,
+          timestamp: Date.now(),
+          content: message.content,
+          type: 'received',
+          status: 'to read',
+        })
+        .then(() => {
+          socket.emit('messages ack', message);
+        });
+    }
+
+  //? Save received acks to local db
+  if (acks)
+    for (let ack of acks) {
+      userId = await getUserId(ack.to);
+      db.table(`chat-${userId}`)
+        .where('uuid')
+        .equals(ack.uuid)
+        .and((msg: MessageData) => msg.status !== 'read')
+        .modify({ status: ack.status })
+        .then(() => {
+          socket.emit('received ack', ack.uuid);
+        });
+    }
 });
 socket.on('error', error => {
   console.error('Connection Error');
@@ -80,14 +97,17 @@ socket.on('chat message', (data: MessageReceived) => {
 
 socket.on('messages ack', async (ack: MessageAck) => {
   const userId = await getUserId(ack.to);
-
   await (async () => await db.open())();
+
   await db
     .table(`chat-${userId}`)
     .where('uuid')
     .equals(ack.uuid)
     .and((msg: MessageData) => msg.status !== 'read')
-    .modify({ status: ack.status });
+    .modify({ status: ack.status })
+    .then(() => {
+      socket.emit('received ack', ack.uuid);
+    });
 });
 
 export const SocketContext = React.createContext(socket);
