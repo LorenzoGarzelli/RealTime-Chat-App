@@ -8,7 +8,8 @@ import { app } from './app';
 import initializeConnection from './webSockets/initializeConnection';
 import middlewareList from './webSockets/middlewares';
 
-import messagesAck from './webSockets/messages-ack';
+import messageAck from './webSockets/message-ack';
+import ackReceived from './webSockets/ack-received';
 
 dotenv.config({ path: './config.env' });
 
@@ -53,7 +54,8 @@ io = new Server(server, { cors: { origin: 'http://localhost:5173' } }); //TODO A
 const OnConnection = (socket: Socket) => {
   initializeConnection(io, socket);
   sendMessageHandlers(io, socket);
-  messagesAck(io, socket);
+  messageAck(io, socket);
+  ackReceived(io, socket);
 
   socket.on('disconnect', () => {
     console.log('user disconnected');

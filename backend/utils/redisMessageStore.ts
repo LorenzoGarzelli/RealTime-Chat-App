@@ -70,18 +70,19 @@ class RedisMessageStore {
   }
   async findAcksForUser(userRoomId: string) {
     await this.connect();
-    //const results = await this.client.lRange(`ack:${userRoomId}`, 0, -1);
-    //return results.map(result => JSON.parse(result));
-
     //@ts-ignore
     const results = await this.client.json.get(`ack:${userRoomId}`);
 
     return results;
   }
 
-  async deleteMessages(socket: Socket, message: MessageAck) {
-    // console.time('messages');
+  async deleteAckForUser(userRoomId: string, uuid: string) {
+    await this.connect();
 
+    this.client.json.DEL(`ack:${userRoomId}`, `$.[?(@.uuid=="${uuid}")]`);
+  }
+
+  async deleteMessages(socket: Socket, message: MessageAck) {
     //TODO JSON.GET ack:816ccbc9-e281-40f8-a189-c82b79bedc5f "$.[?(@.uuid==\"b6211243-39b4-483e-8367-cb848a42e85a747474723\")]"
 
     const exist = await this.client.exists(`ack:${message.from}`);
@@ -89,15 +90,14 @@ class RedisMessageStore {
     if (exist < 1) await this.client.json.set(`ack:${message.from}`, '$', []);
 
     this.client.json
-      //@ts-ignore
+
       .arrAppend(`ack:${message.from}`, '$', {
-        // [message.uuid]: {
         uuid: message.uuid,
         //@ts-ignore
         to: socket.roomId,
         status: message.status,
-        // },
       })
+
       .then(() => {
         //? send ack to sender user
         socket.to(message.from).emit('messages ack', {
@@ -106,7 +106,7 @@ class RedisMessageStore {
           to: socket.roomId,
           status: message.status,
         });
-        //@ts-ignore
+
         this.client.json.DEL(
           //@ts-ignore
           `message:${socket.roomId}`,
@@ -131,10 +131,6 @@ class RedisMessageStore {
         .exec();
 
       this.client.lRem(`message:${socketId}`, 1, JSON.stringify(message));*/
-
-    // console.timeEnd('messages');
-
-    //this.client.del(keys);
   }
 }
 export default new RedisMessageStore();

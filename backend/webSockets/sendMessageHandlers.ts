@@ -5,7 +5,6 @@ import redisMessageStore from '../utils/redisMessageStore';
 
 export default (io: Server, socket: Socket) => {
   socket.on('chat message', (message: Message, callback) => {
-    //.to(socket.userID)
     //@ts-ignore
     message.from = socket.roomId;
     const { to, content, timestamp, from, uuid } = message;
