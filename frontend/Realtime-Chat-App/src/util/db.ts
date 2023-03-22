@@ -12,6 +12,7 @@ export type Message = {
   id?: number;
   type: MessageType;
   status: MessageStatus;
+  resent_timestamp?: string;
 };
 
 const MessageDBFields = '++id ,&uuid, status, type';

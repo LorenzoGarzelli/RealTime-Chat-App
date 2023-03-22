@@ -8,9 +8,19 @@ import { SocketContext } from '../../store/socket-context';
 import { db, Message as MessageData, User } from '../../util/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffectOnce } from '../../hooks/use-effect-once';
+import { MessageSent } from '../../types';
+import {
+  decrypt,
+  encrypt,
+  generateKeyPair,
+  getSharedKey,
+} from '../../util/e2e';
 
 const UserChat = () => {
-  const { userId } = useParams();
+  //TODO Setting Redis TTL back to 86394
+  //const MESSAGE_TTL = 86394; //TODO put in env file
+  const MESSAGE_TTL = 30;
+  const { userId } = useParams<string>();
 
   const socket = useContext(SocketContext);
   const messageInput = useRef<HTMLInputElement>(null);
@@ -53,6 +63,29 @@ const UserChat = () => {
     setIsSendable(false);
   };
 
+  const sendMessage = (message: MessageSent, resent = false) => {
+    //? sending message to user
+    socket.emit(
+      'chat message',
+      {
+        to: '816ccbc9-e281-40f8-a189-c82b79bedc5f',
+        uuid: message.uuid,
+        content: message.content,
+        timestamp: message.timestamp,
+      },
+      //? update message status once server received it
+      (res: any) => {
+        db.table(`chat-${userId}`)
+          .where('uuid')
+          .equals(message.uuid)
+          .modify({
+            status: 'sent',
+            resent_timestamp: resent ? Date.now() + '' : undefined,
+          });
+      }
+    );
+  };
+
   const handleMessageSubmit: React.FormEventHandler<
     HTMLFormElement
   > = event => {
@@ -77,20 +110,17 @@ const UserChat = () => {
     };
     //? storing message in local-DB
     db.table(`chat-${userId}`).add(message);
-    /*.then(res =>
-        console.log(
-          db
-            .table('chat-635ae80c297c2c057ce2c495')
-            .where('id')
-            .equals(res)
-            .toArray()
-            .then(res => {
-              console.log('STORE', res);
-            })
-        )
-      );*/
 
-    socket.emit(
+    const messageToSend: MessageSent = {
+      to: '816ccbc9-e281-40f8-a189-c82b79bedc5f',
+      uuid: uuid,
+      content: messageTxt,
+      timestamp: timestamp + '',
+    };
+    //? sending message to user
+    sendMessage(messageToSend);
+
+    /*socket.emit(
       'chat message',
       {
         to: '816ccbc9-e281-40f8-a189-c82b79bedc5f',
@@ -98,14 +128,37 @@ const UserChat = () => {
         content: messageTxt,
         timestamp: timestamp,
       },
+      //? update message status once server received it
       (res: any) => {
         db.table(`chat-${userId}`)
           .where('uuid')
           .equals(uuid)
           .modify({ status: 'sent' });
       }
-    );
+    );*/
   };
+
+  useEffectOnce(() => {
+    (async () => {
+      const keys = await generateKeyPair();
+      const shared = await getSharedKey(keys.publicKeyJwk, keys.privateKeyJwk);
+      console.log('SHARED', shared);
+      const key = await window.crypto.subtle.importKey(
+        'jwk',
+        shared,
+        {
+          name: 'AES-GCM',
+          length: 256,
+        },
+        true,
+        ['encrypt', 'decrypt']
+      );
+      const cipherText = await encrypt('ciao', key);
+      console.log('ENCRYPT TEXT:', cipherText);
+      const plainText = await decrypt(cipherText, key);
+      console.log('PLAIN TEXT:', plainText);
+    })();
+  });
 
   //? Sending Ack on page mounts
   useEffectOnce(() => {
@@ -126,7 +179,6 @@ const UserChat = () => {
         .equals(userId)
         .toArray()
         .then((res: Array<User>) => res[0].roomId);
-      //console.log(messages);
 
       for (let msg of messages) {
         socket.emit(
@@ -134,7 +186,7 @@ const UserChat = () => {
           {
             uuid: msg.uuid,
             status: 'read',
-            from: userRoomId,
+            to: userRoomId,
           },
           (res: any) => {
             db.table(`chat-${userId}`)
@@ -146,6 +198,28 @@ const UserChat = () => {
       }
     };
     sendAcks();
+  });
+
+  //? Resending non delivered messages
+  useEffectOnce(() => {
+    const resendMessages = async () => {
+      await (async () => await db.open())();
+      const messages: Array<MessageData> = await db
+        .table(`chat-${userId}`)
+        .where('type')
+        .equals('sent')
+        .and(
+          (msg: MessageData) =>
+            (msg.status == 'sent' || msg.status == 'sending') &&
+            (Date.now() - +msg.timestamp) / 1000 >= MESSAGE_TTL &&
+            msg?.resent_timestamp == undefined
+        )
+        .toArray();
+
+      console.log('TO RESEND', messages);
+      messages?.forEach(msg => sendMessage({ ...msg, to: '' }, true));
+    };
+    resendMessages();
   });
 
   //? Auto-scrolling down on messages

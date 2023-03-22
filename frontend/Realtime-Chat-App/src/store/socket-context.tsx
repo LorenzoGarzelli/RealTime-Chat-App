@@ -83,20 +83,21 @@ socket.on('chat message', (data: MessageReceived) => {
     type: 'received',
     status: 'to read',
   };
+  //TODO Generalize the db saving
   db.table('chat-635ae80c297c2c057ce2c495').add({
     ...message,
   });
 
   socket.emit('messages ack', {
     uuid: data.uuid,
-    to: data.to,
-    from: data.from,
+    to: data.from,
+    from: data.to,
     status: 'to read',
   });
 });
 
 socket.on('messages ack', async (ack: MessageAck) => {
-  const userId = await getUserId(ack.to);
+  const userId = await getUserId(ack.from);
   await (async () => await db.open())();
 
   await db
@@ -104,10 +105,13 @@ socket.on('messages ack', async (ack: MessageAck) => {
     .where('uuid')
     .equals(ack.uuid)
     .and((msg: MessageData) => msg.status !== 'read')
-    .modify({ status: ack.status })
+    .modify({ status: ack.status, resent_timestamp: undefined })
     .then(() => {
       socket.emit('received ack', ack.uuid);
     });
 });
-
+//TODO re-send sending messages on reconnection
+socket.on('connect', () => {
+  console.log('RECONNECT');
+});
 export const SocketContext = React.createContext(socket);

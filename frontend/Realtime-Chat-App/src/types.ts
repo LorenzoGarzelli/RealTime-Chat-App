@@ -12,10 +12,18 @@ export type MessageReceived = {
   timestamp: string;
   status?: MessageStatus;
 };
+export type MessageSent = {
+  uuid: string;
+  content: string;
+  to: string;
+  timestamp: string;
+  status?: MessageStatus;
+};
 
 export type MessageAck = {
   uuid: string;
   to: string;
+  from: string;
   status: MessageStatus;
 };
 
