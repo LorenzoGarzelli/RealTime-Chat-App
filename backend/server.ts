@@ -1,59 +1,53 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { Server, Socket } from 'socket.io';
-import { createClient } from 'redis';
-
 import sendMessageHandlers from './webSockets/sendMessageHandlers';
 import { app } from './app';
 import initializeConnection from './webSockets/initializeConnection';
-import middlewareList from './webSockets/middlewares';
-
+import authenticationMiddleware from './webSockets/middlewares';
 import messageAck from './webSockets/message-ack';
 import ackReceived from './webSockets/ack-received';
+import keySharingHandler from './webSockets/keySharingHandler';
 
 dotenv.config({ path: './config.env' });
 
-const DB_uri = process.env.DATABASE!.replace(
-  '<password>',
-  process.env.DATABASE_PASSWORD!
-);
+let connectToDatabase: () => void = () => {
+  const DB_uri = process.env.DATABASE!.replace(
+    '<password>',
+    process.env.DATABASE_PASSWORD!
+  );
 
-let database: mongoose.Connection;
+  mongoose.connect(DB_uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  } as mongoose.ConnectOptions);
 
-mongoose.connect(DB_uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-} as mongoose.ConnectOptions);
+  let databaseConnection = mongoose.connection;
 
-database = mongoose.connection;
+  databaseConnection.once('open', async () => {
+    console.log('Connected to database🔥');
+  });
+  databaseConnection.once('error', async () => {
+    console.log('⚠️ Error connecting to database❌');
+  });
+};
 
-database.once('open', async () => {
-  console.log('Connected to database🔥');
-});
-database.once('error', async () => {
-  console.log('⚠️ Error connecting to database❌');
-});
-
+connectToDatabase();
 const port = process.env.PORT || 3000;
+
 const server = app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
 });
 
-const pubClient = createClient({
-  url: process.env.REDIS_DB_URL,
-  username: process.env.REDIS_USERNAME,
-  password: process.env.REDIS_PASSWORD,
-});
-const subClient = pubClient.duplicate();
-
-let io: Server;
-//Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
-io = new Server(server, { cors: { origin: 'http://localhost:5173' } }); //TODO Adjust cors policy
+let io: Server = new Server(server, {
+  cors: { origin: 'https://localhost:5173' },
+}); //TODO Adjust cors policy
 
 //? Socket Io
-const OnConnection = (socket: Socket) => {
+const connectionHandler = (socket: Socket) => {
   initializeConnection(io, socket);
   sendMessageHandlers(io, socket);
+  keySharingHandler(io, socket);
   messageAck(io, socket);
   ackReceived(io, socket);
 
@@ -62,12 +56,8 @@ const OnConnection = (socket: Socket) => {
   });
 };
 
-//? Loading middleware
-middlewareList.forEach(mid => io.use(mid));
-
-//TODO Implement Socket Io Auth
-io.on('connection', OnConnection);
-//});
+io.use(authenticationMiddleware);
+io.on('connection', connectionHandler);
 
 process.on('unhandledRejection', (err: Error) => {
   console.log(err.name, err.message);

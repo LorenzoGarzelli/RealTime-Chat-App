@@ -6,6 +6,7 @@ import { UserModel as User } from '../models/Users/users.model';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
 import { FriendShipsModel } from '../models/FriendShips/friendships.model';
+import mongoose from 'mongoose';
 
 interface UserControllerType {
   getAllUsers: ControllerMiddleware;
@@ -13,18 +14,19 @@ interface UserControllerType {
   getFriendShipsRequests: ControllerMiddleware;
   replyToFriendShipRequest: ControllerMiddleware;
   getAllFriends: ControllerMiddleware;
+  shareKeysRequest: ControllerMiddleware;
 }
 
 class UserController implements UserControllerType {
   getAllUsers = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-      const doc = await User.find({}).select('-password');
+      const users = await User.find({}).select('-password');
 
       res.status(200).json({
         status: 'success',
-        results: doc.length,
+        results: users.length,
         data: {
-          doc,
+          users,
         },
       });
     }
@@ -32,47 +34,53 @@ class UserController implements UserControllerType {
 
   sendFriendshipRequest = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
+      const { userId: friendShipReceiverUserId } = req.params;
       //@ts-ignore
-      if (req.params.userId && req.user.id !== req.params.userId) {
-        const user = await User.findById(req.params.userId);
+      const { id: friendShipRequestInitiatorUserId } = req.user;
+
+      if (!friendShipReceiverUserId)
+        return next(new AppError('User Id field is empty', 400));
+
+      if (
+        friendShipReceiverUserId &&
+        friendShipRequestInitiatorUserId !== friendShipReceiverUserId
+      ) {
+        const user = await User.findById(friendShipReceiverUserId);
         if (!user) return next(new AppError('No user found with that Id', 404));
 
-        /*
-         //@ts-ignore
-        const result = await User.findById(req.user.id).update(
-          //@ts-ignore
-          { _id: req.user.id },
-          {
-            $addToSet: {
-              friends: { _id: req.params.userId, status: 'pending' },
-            },
-          }
-        );
-
-        if (!result.modifiedCount) {
-          return next(new AppError('Friend request already forwarded', 409));
-        }*/
-
         await FriendShipsModel.findById(user._id).updateOne({
-          //@ts-ignore
-          $addToSet: { friends: { from: req.user.id } },
+          $addToSet: { friends: { from: friendShipRequestInitiatorUserId } },
         });
 
-        //TODO Add functionality
         return res.status(201).json({
           status: 'success',
         });
-      }
-      return next(new AppError('User Id field incorrect or empty ', 400));
+      } else
+        return next(new AppError('User Id field incorrect or empty ', 400));
     }
   );
   getFriendShipsRequests = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-      const friendShipsRequests = await FriendShipsModel.find({
-        //@ts-ignore
-        _id: req.user.id,
-        'friends.status': { $ne: 'bonded' },
-      });
+      const friendShipsRequests = await FriendShipsModel.aggregate([
+        {
+          $match: {
+            //@ts-ignore
+            _id: mongoose.Types.ObjectId(req.user.id),
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            friends: {
+              $filter: {
+                input: '$friends',
+                as: 'friend',
+                cond: { $eq: ['$$friend.status', 'pending'] },
+              },
+            },
+          },
+        },
+      ]);
 
       return res.status(200).json({
         status: 'success',
@@ -83,117 +91,158 @@ class UserController implements UserControllerType {
 
   replyToFriendShipRequest = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-      if (req.params.userId) {
-        //@ts-ignore
-        const { accepted } = req.query;
-        const friendShipRequest = await FriendShipsModel.find(
-          {
-            //@ts-ignore
-            _id: req.user.id,
-            'friends.from': req.params.userId,
-            'friends.status': { $ne: 'bonded' },
-          },
-          { _id: 0, friends: { $elemMatch: { from: req.params.userId } } }
+      const { userId: friendShipRequestInitiatorUserId } = req.params;
+      if (!friendShipRequestInitiatorUserId)
+        return next(new AppError('User Id field is empty', 400));
+
+      //@ts-ignore
+      const { id: friendShipReceiverUserId } = req.user;
+
+      const { accepted } = req.query;
+
+      const friendShipRequest = await FriendShipsModel.findOne(
+        {
+          _id: friendShipReceiverUserId,
+          'friends.from': friendShipRequestInitiatorUserId,
+          'friends.status': { $eq: 'pending' },
+        },
+        {
+          _id: 0,
+          friends: { $elemMatch: { from: friendShipRequestInitiatorUserId } },
+        }
+      );
+
+      if (!friendShipRequest)
+        return next(
+          new AppError('No friendShip request found with that userId', 404)
         );
 
-        if (!friendShipRequest.length)
-          return next(
-            new AppError('No friendShip request found with that userId', 404)
-          );
+      if (accepted == 'true') {
+        const updateFriendShipQuery = FriendShipsModel.updateOne(
+          {
+            _id: friendShipReceiverUserId,
+            'friends.from': friendShipRequestInitiatorUserId,
+          },
+          {
+            $set: {
+              'friends.$.status': 'bonded',
+              'friends.$.user': friendShipRequestInitiatorUserId,
+            },
+            $unset: {
+              'friends.$.from': '',
+            },
+          }
+        );
 
-        //@ts-ignore
+        const addFriendShipQuery = new Promise((resolve, reject) => {
+          //? Check if a friendShip request send from this user already exist
+          FriendShipsModel.updateOne(
+            {
+              _id: friendShipRequestInitiatorUserId,
+              'friends.from': friendShipReceiverUserId,
+            },
+            {
+              $set: {
+                'friends.$.status': 'bonded',
+                'friends.$.user': friendShipReceiverUserId,
+              },
 
-        if (accepted == 'true') {
-          const updateFriendShipQueries = [];
-
-          updateFriendShipQueries.push(
+              $unset: {
+                'friends.$.from': '',
+              },
+            }
+          ).then((res: any) => {
+            if (res.modifiedCount) return resolve(res);
             FriendShipsModel.updateOne(
-              //@ts-ignore
-              { _id: req.user.id, 'friends.from': req.params.userId },
               {
-                $set: {
-                  'friends.$.status': 'bonded',
-                  'friends.$.user': req.params.userId,
-                  // 'friends.$from': null,
-                },
-                $unset: {
-                  'friends.$.from': '',
+                _id: friendShipRequestInitiatorUserId,
+              },
+
+              {
+                $addToSet: {
+                  friends: { user: friendShipReceiverUserId, status: 'bonded' },
                 },
               }
-            )
-          );
+            ).then(res => resolve(res));
+          });
+        });
 
-          updateFriendShipQueries.push(
-            new Promise((resolve, reject) => {
-              //? Check if a friendShip request send from this user already exist
-              FriendShipsModel.updateOne(
-                {
-                  _id: req.params.userId,
-                  //@ts-ignore
-                  'friends.from': req.user.id,
-                },
-                {
-                  $set: {
-                    'friends.$.status': 'bonded',
-                    //@ts-ignore
-                    'friends.$.user': req.user.id,
-                    // 'friends.$from': null,
-                  },
+        await Promise.all([updateFriendShipQuery, addFriendShipQuery]);
+      } else if (accepted == 'false') {
+        //? delete the friendShip request
 
-                  $unset: {
-                    'friends.$.from': '',
-                  },
-                }
-              ).then((res: any) => {
-                if (res.modifiedCount) return resolve(res);
-                FriendShipsModel.updateOne(
-                  {
-                    _id: req.params.userId,
-                  },
-
-                  {
-                    $addToSet: {
-                      //@ts-ignore
-                      friends: { user: req.user.id, status: 'bonded' },
-                    },
-                  }
-                ).then(res => resolve(res));
-              });
-            })
-          );
-
-          await Promise.all(updateFriendShipQueries);
-        } else if (accepted == 'false') {
-          //? delete the friendShip request
-
-          await FriendShipsModel.updateOne(
-            //@ts-ignore
-            { _id: req.user.id },
-            {
-              $pull: { friends: { from: req.params.userId } },
-            }
-          );
-        }
-        return res.status(200).end();
+        await FriendShipsModel.updateOne(
+          { _id: friendShipReceiverUserId },
+          {
+            $pull: { friends: { from: friendShipRequestInitiatorUserId } },
+          }
+        );
       }
-      return next(new AppError('User Id field is empty', 400));
+      return res.status(200).end();
     }
   );
 
   getAllFriends = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-      const friends = await FriendShipsModel.find(
+      const friends = await FriendShipsModel.aggregate([
         {
-          //@ts-ignore
-          _id: req.user.id,
+          $match: {
+            //@ts-ignore
+            _id: mongoose.Types.ObjectId(req.user.id),
+          },
         },
-        { _id: 0, friends: { $elemMatch: { status: 'bonded' } } }
-      );
+        {
+          $project: {
+            _id: 0,
+            friends: {
+              $filter: {
+                input: '$friends',
+                as: 'friend',
+                cond: { $eq: ['$$friend.status', 'bonded'] },
+              },
+            },
+          },
+        },
+      ]);
 
       res.status(200).json({
         status: 'success',
         data: friends,
       });
+    }
+  );
+  shareKeysRequest = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { userId: friendId } = req.params;
+      if (!friendId) return next(new AppError('User Id field is empty', 400));
+
+      const user = await User.findById(friendId);
+      if (!user) return next(new AppError('No user found with that Id', 404));
+
+      const friendShip = (
+        await FriendShipsModel.find({
+          _id: user.id,
+          //@ts-ignore
+          'friends.user': req.user.id,
+          'friends.status': 'bonded',
+        })
+      )[0];
+
+      if (!friendShip)
+        return next(new AppError('No friendShip found with that userId', 404));
+      const result = await FriendShipsModel.updateOne(
+        {
+          _id: user.id,
+          //@ts-ignore
+          'friends.user': req.user.id,
+        },
+        {
+          $set: {
+            'friends.$.PBK': JSON.stringify(req.body.PBK),
+          },
+        }
+      );
+      return res.status(200).end();
     }
   );
 }
