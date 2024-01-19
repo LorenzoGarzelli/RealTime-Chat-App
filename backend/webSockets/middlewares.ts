@@ -5,12 +5,10 @@ import { UserModel as User } from '../models/Users/users.model';
 import AppError from '../utils/appError';
 
 const authenticationMiddleware = async (socket: Socket, next: any) => {
-  //TODO replace with handshake.auth
   try {
     const token = socket.handshake.auth.token
       ? socket.handshake.auth.token
       : socket.handshake.headers.token;
-    // const token = socket.handshake.auth.token;
 
     if (!token)
       return next(new AppError('Token header parameter is missing', 400));
@@ -47,6 +45,4 @@ const authenticationMiddleware = async (socket: Socket, next: any) => {
   }
 };
 
-const middlewareList = [authenticationMiddleware];
-
-export default middlewareList;
+export default authenticationMiddleware;

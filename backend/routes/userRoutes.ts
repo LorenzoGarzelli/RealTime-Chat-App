@@ -26,7 +26,7 @@ router.patch(
   '/friendShips/reply/:userId',
   userController.replyToFriendShipRequest
 );
-
+router.post('/friendShips/shareKeys/:userId', userController.shareKeysRequest);
 router.get('/friends', userController.getAllFriends);
 
 //? Admin Only Actions

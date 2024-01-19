@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
+import { type } from 'os';
 import AppError from '../utils/appError';
+import { Socket } from 'socket.io';
 
 type ControllerMiddleware = (
   req: Request,
@@ -30,8 +32,24 @@ type MessageAck = {
   status: MessageStatus;
 };
 
+type KeysSharing = {
+  PBK: JsonWebKey;
+  to: string;
+  from?: string;
+};
+
 export type MessageStatus = 'read' | 'to read' | 'sent' | 'sending';
 
 export type MessageType = 'received' | 'sent';
 
-export { ControllerMiddleware, ErrorControllerMiddleware, Message, MessageAck };
+export {
+  ControllerMiddleware,
+  ErrorControllerMiddleware,
+  Message,
+  MessageAck,
+  KeysSharing,
+};
+
+export interface ClientSocket extends Socket {
+  roomId: string;
+}

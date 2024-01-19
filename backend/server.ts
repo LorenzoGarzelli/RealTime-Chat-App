@@ -1,13 +1,14 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { Server, Socket } from 'socket.io';
-import sendMessageHandlers from './webSockets/sendMessageHandlers';
+import sendMessageHandler from './webSockets/sendMessageHandler';
 import { app } from './app';
 import initializeConnection from './webSockets/initializeConnection';
 import authenticationMiddleware from './webSockets/middlewares';
-import messageAck from './webSockets/message-ack';
-import ackReceived from './webSockets/ack-received';
+import messageAckHandler from './webSockets/messageAckHandler';
+import ackReceivedHandler from './webSockets/ackReceivedHandler';
 import keySharingHandler from './webSockets/keySharingHandler';
+import { ClientSocket } from './types/types';
 
 dotenv.config({ path: './config.env' });
 
@@ -45,13 +46,16 @@ let io: Server = new Server(server, {
 
 //? Socket Io
 const connectionHandler = (socket: Socket) => {
-  initializeConnection(io, socket);
-  sendMessageHandlers(io, socket);
-  keySharingHandler(io, socket);
-  messageAck(io, socket);
-  ackReceived(io, socket);
+  const clientSocket = socket as ClientSocket;
+  if (!clientSocket.roomId) return; //TODO handle websocket errors
 
-  socket.on('disconnect', () => {
+  initializeConnection(io, clientSocket);
+  sendMessageHandler(io, clientSocket);
+  keySharingHandler(io, clientSocket);
+  messageAckHandler(io, clientSocket);
+  ackReceivedHandler(io, clientSocket);
+
+  clientSocket.on('disconnect', () => {
     console.log('user disconnected');
   });
 };
