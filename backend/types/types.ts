@@ -53,3 +53,19 @@ export {
 export interface ClientSocket extends Socket {
   roomId: string;
 }
+
+export interface User {
+  _id: string;
+  name: string;
+  roomId: string;
+}
+
+enum FriendStatus {
+  bonded = 'bonded',
+  pending = 'pending',
+}
+export type Friend = {
+  status: FriendStatus;
+  user: User;
+  PBK: string;
+};

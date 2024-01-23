@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { ControllerMiddleware } from '../types/types';
+import { ControllerMiddleware, Friend } from '../types/types';
 import { UserModel as User } from '../models/Users/users.model';
 
 import catchAsync from '../utils/catchAsync';
@@ -184,30 +184,36 @@ class UserController implements UserControllerType {
 
   getAllFriends = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
-      const friends = await FriendShipsModel.aggregate([
-        {
-          $match: {
-            //@ts-ignore
-            _id: mongoose.Types.ObjectId(req.user.id),
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            friends: {
-              $filter: {
-                input: '$friends',
-                as: 'friend',
-                cond: { $eq: ['$$friend.status', 'bonded'] },
-              },
-            },
-          },
-        },
-      ]);
+      // const friends = await FriendShipsModel.aggregate([
+      //   {
+      //     $match: {
+      //       //@ts-ignore
+      //       _id: mongoose.Types.ObjectId(req.user.id),
+      //     },
+      //   },
+      //   {
+      //     $project: {
+      //       _id: 0,
+      //       friends: {
+      //         $filter: {
+      //           input: '$friends',
+      //           as: 'friend',
+      //           cond: { $eq: ['$$friend.status', 'bonded'] },
+      //         },
+      //       },
+      //     },
+      //   },
+      // ]);
+
+      const friendsQueryResult = await FriendShipsModel.findById(req.user?._id);
+      const friends: Friend[] = JSON.parse(
+        JSON.stringify(friendsQueryResult)
+      ).friends;
 
       res.status(200).json({
         status: 'success',
-        data: friends,
+
+        data: { friends: friends.filter(friend => friend.status === 'bonded') },
       });
     }
   );
