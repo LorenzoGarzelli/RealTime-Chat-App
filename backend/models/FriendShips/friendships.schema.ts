@@ -10,15 +10,16 @@ const FriendShipsSchema = new Schema<FriendShips>(
           from: {
             type: Schema.Types.ObjectId,
             ref: 'User',
-            unique: true,
+            unique: false,
             sparse: true,
           },
           user: {
             type: Schema.Types.ObjectId,
             ref: 'User',
-            unique: true,
+            unique: false,
             sparse: true,
           },
+          PBK: Object,
 
           status: {
             type: String,
@@ -30,8 +31,8 @@ const FriendShipsSchema = new Schema<FriendShips>(
         default: [],
       },
     ],
-  }
-  // { toJSON: { virtuals: true }, toObject: { virtuals: true } }
+  },
+  { toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 FriendShipsSchema.pre(/^find/, function (next) {
@@ -39,10 +40,5 @@ FriendShipsSchema.pre(/^find/, function (next) {
   this.populate({ path: 'friends.user', select: 'roomId name' });
   next();
 });
-// FriendShipsSchema.virtual('friends.roomId', {
-//   ref: 'User',
-//   localField: 'friends._id',
-//   foreignField: '_id',
-//   justOne: true,
-// });
+
 export default FriendShipsSchema;

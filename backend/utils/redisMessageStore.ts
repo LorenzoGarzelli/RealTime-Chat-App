@@ -55,7 +55,7 @@ class RedisMessageStore {
   }
   async findAcksForUser(userRoomId: string) {
     if (!this.client.isOpen) await this.client.connect();
-    //@ts-ignore
+
     const foundAcks = await this.client.json.get(`ack:${userRoomId}`);
 
     return foundAcks;
@@ -78,16 +78,15 @@ class RedisMessageStore {
 
     await this.client.json.arrAppend(`ack:${message.to}`, '$', {
       uuid: message.uuid,
-      //@ts-ignore
       from: socket.roomId,
       status: message.status,
     });
 
     await this.client.json.DEL(
-      //@ts-ignore
       `message:${socket.roomId}`,
       `$.[?(@.uuid=="${message.uuid}")]`
     );
   }
 }
+
 export default new RedisMessageStore();
