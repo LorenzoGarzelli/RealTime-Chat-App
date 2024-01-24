@@ -5,21 +5,21 @@ import { motion } from 'framer-motion';
 import { useContext, useEffect, useId, useRef, useState } from 'react';
 import Message from './Message';
 import { SocketContext } from '../../store/socket-context';
-import { db, Message as MessageData, User } from '../../util/db';
+import {
+  DBController,
+  KeysPairs,
+  Message as MessageData,
+  User,
+} from '../../util/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffectOnce } from '../../hooks/use-effect-once';
 import { MessageSent } from '../../types';
-import {
-  decrypt,
-  encrypt,
-  generateKeyPair,
-  getSharedKey,
-} from '../../util/e2e';
+import { keyStore } from '../../util/KeyStore';
 
 const UserChat = () => {
   //TODO Setting Redis TTL back to 86394
   //const MESSAGE_TTL = 86394; //TODO put in env file
-  const MESSAGE_TTL = 30;
+
   const { userId } = useParams<string>();
 
   const socket = useContext(SocketContext);
@@ -31,32 +31,23 @@ const UserChat = () => {
 
   const chatFeedRef = useRef<HTMLDivElement>(null);
 
-  const messages = useLiveQuery(
-    async () => {
-      try {
-        await (async () => await db.open())();
+  const messages = useLiveQuery(async () => {
+    try {
+      //        await (async () => await DBController.db.open())();
 
-        const res: MessageData[] = await db
-          //.table('chat-635ae80c297c2c057ce2c495')
-          .table(`chat-${userId}`)
-          .toArray();
-        if (res.length > 0) {
-          setMessagesList(
-            res.map(message => <Message message={message} key={message.id} />)
-          );
-        }
-      } catch (err) {
-        console.log('THIS', err);
-        console.log(db);
-        db.close();
-        db.open();
+      const res: MessageData[] = await DBController.getChatMessagesByFriendId(
+        userId!
+      );
+
+      if (res.length > 0) {
+        setMessagesList(
+          res.map(message => <Message message={message} key={message.id} />)
+        );
       }
-      //TODO Check if i can change dependency
-    },
-    [
-      /*db.verno*/
-    ]
-  );
+    } catch (err) {
+      console.log('THIS', err);
+    }
+  }, []);
   const inputChangeHandler = () => {
     if (messageInput.current?.value.length) return setIsSendable(true);
 
@@ -67,28 +58,20 @@ const UserChat = () => {
     //? sending message to user
     socket.emit(
       'chat message',
-      {
-        to: '816ccbc9-e281-40f8-a189-c82b79bedc5f',
-        uuid: message.uuid,
-        content: message.content,
-        timestamp: message.timestamp,
-      },
+      message,
       //? update message status once server received it
       (res: any) => {
-        db.table(`chat-${userId}`)
-          .where('uuid')
-          .equals(message.uuid)
-          .modify({
-            status: 'sent',
-            resent_timestamp: resent ? Date.now() + '' : undefined,
-          });
+        DBController.updateChatMessageStatus(userId!, message.uuid, {
+          status: 'sent',
+          resent_timestamp: resent ? Date.now() + '' : undefined,
+        });
       }
     );
   };
 
   const handleMessageSubmit: React.FormEventHandler<
     HTMLFormElement
-  > = event => {
+  > = async event => {
     event.preventDefault();
     if (
       !messageInput.current?.value.length ||
@@ -99,7 +82,6 @@ const UserChat = () => {
     const messageTxt = messageInput.current?.value;
     const timestamp = Date.now();
     const uuid = crypto.randomUUID();
-    console.log(db);
 
     const message: MessageData = {
       uuid: uuid,
@@ -109,76 +91,84 @@ const UserChat = () => {
       status: 'sending',
     };
     //? storing message in local-DB
-    db.table(`chat-${userId}`).add(message);
+    DBController.saveMessage(message, userId!);
+    const roomId = (await DBController.getFriendById(userId!)).roomId;
+
+    const encryptedMessage = await keyStore.encrypt(messageTxt, userId!);
 
     const messageToSend: MessageSent = {
-      to: '816ccbc9-e281-40f8-a189-c82b79bedc5f',
+      to: roomId,
       uuid: uuid,
-      content: messageTxt,
+      content: encryptedMessage,
       timestamp: timestamp + '',
     };
     //? sending message to user
-    sendMessage(messageToSend);
 
-    /*socket.emit(
-      'chat message',
-      {
-        to: '816ccbc9-e281-40f8-a189-c82b79bedc5f',
-        uuid: uuid,
-        content: messageTxt,
-        timestamp: timestamp,
-      },
-      //? update message status once server received it
-      (res: any) => {
-        db.table(`chat-${userId}`)
-          .where('uuid')
-          .equals(uuid)
-          .modify({ status: 'sent' });
-      }
-    );*/
+    sendMessage(messageToSend);
   };
 
-  useEffectOnce(() => {
-    (async () => {
-      const keys = await generateKeyPair();
-      const shared = await getSharedKey(keys.publicKeyJwk, keys.privateKeyJwk);
-      console.log('SHARED', shared);
-      const key = await window.crypto.subtle.importKey(
-        'jwk',
-        shared,
-        {
-          name: 'AES-GCM',
-          length: 256,
-        },
-        true,
-        ['encrypt', 'decrypt']
-      );
-      const cipherText = await encrypt('ciao', key);
-      console.log('ENCRYPT TEXT:', cipherText);
-      const plainText = await decrypt(cipherText, key);
-      console.log('PLAIN TEXT:', plainText);
-    })();
-  });
+  // useEffectOnce(() => {
+  //   (async () => {
+  //     //TODO Share Generated PBK
+  //     // const keys = await generateKeyPair();
+  //     //console.log('SHARED', shared);
+  //     //const entry = {
+  //     //  _id: '635ae80c297c2c057ce2c495',
+  //     //  PBK: keys.publicKeyJwk,
+  //     //  PVK: keys.privateKeyJwk,
+  //     //};
+  //     //db.table(`keys`).add(entry);
+  //     await (async () => await db.open())();
+
+  //     const keys: KeysPairs = (
+  //       await db
+  //         .table('keys')
+  //         .where('_id')
+  //         .equals('635ae80c297c2c057ce2c495')
+  //         .toArray()
+  //     )[0];
+
+  //     console.log('KEYS:', keys);
+
+  //     //TODO Obtain Friend Generated PBK, and compute shared key
+  //     //const shared = await keyStore.getSharedKey(keys.PBK, keys.PVK);
+  //     /* const key = await window.crypto.subtle.importKey(
+  //       'jwk',
+  //       shared,
+  //       {
+  //         name: 'AES-GCM',
+  //         length: 256,
+  //       },
+  //       true,
+  //       ['encrypt', 'decrypt']
+  //     );*/
+
+  //     const text = 'hello😎';
+
+  //     console.time('ENCRYPTION');
+  //     //@ts-ignore
+  //     const cipherText = await keyStore.encrypt(text, userId);
+  //     console.timeEnd('ENCRYPTION');
+
+  //     console.log('ENCRYPT TEXT:', cipherText);
+  //     console.time('DECRYPTION');
+  //     //@ts-ignore
+  //     const plainText = await keyStore.decrypt(cipherText, userId);
+  //     console.timeEnd('DECRYPTION');
+  //     console.log('PLAIN TEXT:', plainText);
+  //   })();
+  // });
 
   //? Sending Ack on page mounts
   useEffectOnce(() => {
     const sendAcks = async () => {
-      await (async () => await db.open())();
+      //await (async () => await DBController.db.open())();
 
-      const messages: Array<MessageData> = await db
-        .table(`chat-${userId}`)
-        .where('type')
-        .equals('received')
-        .and((msg: MessageData) => msg.status == 'to read')
-        .toArray();
+      const messages: Array<MessageData> = await DBController.getMessagesToRead(
+        userId!
+      );
 
-      const userRoomId = await db
-        .table('friends')
-        .where('_id')
-        //@ts-ignore
-        .equals(userId)
-        .toArray()
-        .then((res: Array<User>) => res[0].roomId);
+      const userRoomId = (await DBController.getFriendById(userId!))._id;
 
       for (let msg of messages) {
         socket.emit(
@@ -189,10 +179,9 @@ const UserChat = () => {
             to: userRoomId,
           },
           (res: any) => {
-            db.table(`chat-${userId}`)
-              .where('uuid')
-              .equals(msg.uuid)
-              .modify({ status: 'read' });
+            DBController.updateChatMessageStatus(userId!, msg.uuid, {
+              status: 'read',
+            });
           }
         );
       }
@@ -203,19 +192,9 @@ const UserChat = () => {
   //? Resending non delivered messages
   useEffectOnce(() => {
     const resendMessages = async () => {
-      await (async () => await db.open())();
-      const messages: Array<MessageData> = await db
-        .table(`chat-${userId}`)
-        .where('type')
-        .equals('sent')
-        .and(
-          (msg: MessageData) =>
-            (msg.status == 'sent' || msg.status == 'sending') &&
-            (Date.now() - +msg.timestamp) / 1000 >= MESSAGE_TTL &&
-            msg?.resent_timestamp == undefined
-        )
-        .toArray();
-
+      //await (async () => await DBController.db.open())();
+      const messages: Array<MessageData> =
+        await DBController.getMessagesToResend(userId!);
       console.log('TO RESEND', messages);
       messages?.forEach(msg => sendMessage({ ...msg, to: '' }, true));
     };
@@ -236,7 +215,7 @@ const UserChat = () => {
       } else {
         // console.log('Element is NOT in the viewport!');
 
-        //TODO Fux auto scrolling
+        //TODO Fix auto scrolling
 
         if (!isMounted) {
           chatFeedRef.current?.scrollIntoView();

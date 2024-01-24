@@ -1,22 +1,19 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState, useTransition } from 'react';
-import { User, db } from '../util/db';
+import { User, DBController } from '../util/db';
 import { Friend } from './../types';
-//import useIndexDB from './use-indexDB';
+import { keyStore } from '../util/KeyStore';
 
 export default function useFriends() {
   const [isLoading, setIsLoading] = useState(true);
   const [friendsList, setFriendsList] = useState<Array<User>>([]);
   const url = 'api/v1/users/friends';
-  // const [isPending, startTransition] = useTransition();
 
-  //const db = useIndexDB();
   useEffect(() => {
     const loadLocalData = async () => {
-      // useLiveQuery(async () => {
       try {
-        //const friends: User[] = await db.friends.toArray();
-        const friends: User[] = await db.table('friends').toArray();
+        const friends: User[] = await DBController.getFriends();
+
         setFriendsList(friends);
       } catch (err) {
         // console.error(err);
@@ -26,25 +23,30 @@ export default function useFriends() {
       try {
         const response = await fetch(url, { credentials: 'include' });
         const { data } = await response.json();
-        let { friends } = data[0];
-        friends = friends.map((friend: Friend) => friend.user);
-        setFriendsList(friends);
+        const { friends } = data;
+        const updatedFriendsList = [];
+
+        for (let friend of friends as Friend[]) {
+          if (friend.PBK)
+            keyStore.storeReceivedKey(JSON.parse(friend.PBK), friend.user._id);
+          updatedFriendsList.push(friend.user);
+        }
+        setFriendsList(updatedFriendsList);
       } catch (error) {
         //TODO Manage Error
       }
     };
     loadLocalData();
-    // startTransition(() => {
     updateLocalData();
-    // });
   }, []);
 
   //? Updating local friends data
   useEffect(() => {
     if (friendsList.length > 0) {
-      //friendsList.forEach((user: User) => db.friends.add(user));
-      friendsList.forEach((user: User) => db.table('friends').add(user));
-      friendsList.forEach(user => db.addChatStore(`chat-${user._id}`));
+      friendsList.forEach((user: User) => {
+        DBController.saveFriend(user);
+        DBController.addChatStore(`chat-${user._id}`);
+      });
     }
   }, [friendsList]);
 

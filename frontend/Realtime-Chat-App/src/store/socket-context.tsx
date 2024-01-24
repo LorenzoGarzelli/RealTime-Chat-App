@@ -1,7 +1,14 @@
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { MessageReceived, MessageAck } from '../types';
-import { User, db, Message as MessageData } from './../util/db';
+import { MessageReceived, MessageAck, KeysSharing } from '../types';
+import { keyStore } from '../util/KeyStore';
+import {
+  User,
+  DBController,
+  Message as MessageData,
+  KeysPairs,
+} from './../util/db';
 
 export const socket = io('http://localhost:8000', {
   transports: ['websocket'],
@@ -16,56 +23,66 @@ export const socket = io('http://localhost:8000', {
 const usernames = new Map<string, string>();
 
 const getUserId = async (userRoomId: string) => {
+  //TODO check for null return value
   if (usernames.has(userRoomId)) return usernames.get(userRoomId);
 
-  const user: Array<User> = await db
-    .table('friends')
-    .where('roomId')
-    .equals(userRoomId)
-    .toArray();
+  const user = await DBController.getFriendByRoomId(userRoomId);
 
-  if (user.length < 0) console.error('ERRORE'); //TODO To Handle
-  usernames.set(userRoomId, user[0]._id);
-  return user[0]._id;
+  console.log(user);
+
+  usernames.set(userRoomId, user._id);
+  return user._id;
   // fetching the username
 };
 socket.on('session', async data => {
   const messages: Array<MessageReceived> = data.messages;
   const acks: Array<MessageAck> = data.acks;
 
-  await (async () => await db.open())();
+  //TODO need to delete?? await (async () => await DBController.db.open())();
   let userId;
   //messages.map(msg => (msg.status = 'to read'));
   //? Save received messages to local db
   if (messages)
     for (let message of messages) {
       userId = await getUserId(message.from);
-      db.table(`chat-${userId}`)
+      //TODO Create SaveMessageToDb Method
+
+      const messageData: MessageData = {
+        uuid: message.uuid,
+        timestamp: message.timestamp,
+        content: await keyStore.decrypt(message.content, userId!),
+        type: 'received',
+        status: 'to read',
+      };
+      await DBController.saveMessage(messageData, userId!);
+      socket.emit('messages ack', message);
+      socket.emit('messages ack', {
+        uuid: message.uuid,
+        to: message.from,
+        from: message.to,
+        status: 'to read',
+      });
+      /* db.table(`chat-${userId}`)
         .add({
           uuid: message.uuid,
           // timestamp: message.timestamp,
           timestamp: Date.now(),
-          content: message.content,
+          //content: message.content,
+          content: keyStore.decrypt(message.content, userId!),
           type: 'received',
           status: 'to read',
         })
         .then(() => {
           socket.emit('messages ack', message);
-        });
+        });*/
     }
 
   //? Save received acks to local db
   if (acks)
     for (let ack of acks) {
-      userId = await getUserId(ack.to);
-      db.table(`chat-${userId}`)
-        .where('uuid')
-        .equals(ack.uuid)
-        .and((msg: MessageData) => msg.status !== 'read')
-        .modify({ status: ack.status })
-        .then(() => {
-          socket.emit('received ack', ack.uuid);
-        });
+      userId = await getUserId(ack.from);
+      await DBController.updateMessageStatusWithAck(userId!, ack);
+      socket.emit('received ack', ack.uuid);
     }
 });
 socket.on('error', error => {
@@ -73,45 +90,47 @@ socket.on('error', error => {
   //TODO Handle Connection Error
 });
 
-socket.on('chat message', (data: MessageReceived) => {
+socket.on('chat message', async (data: MessageReceived) => {
+  const path = window.location.href.split('/');
+  const param = path[path.length - 1];
   console.log(data);
+  const userId = await getUserId(data.from);
 
+  const status = param == userId ? 'read' : 'to read';
   const message: MessageData = {
     uuid: data.uuid,
     timestamp: data.timestamp,
-    content: data.content,
+    content: await keyStore.decrypt(data.content, userId!),
     type: 'received',
-    status: 'to read',
+    status: status,
   };
-  //TODO Generalize the db saving
-  db.table('chat-635ae80c297c2c057ce2c495').add({
-    ...message,
-  });
+
+  DBController.saveMessage(message, userId!);
 
   socket.emit('messages ack', {
     uuid: data.uuid,
     to: data.from,
     from: data.to,
-    status: 'to read',
+    status: status,
   });
 });
 
 socket.on('messages ack', async (ack: MessageAck) => {
   const userId = await getUserId(ack.from);
-  await (async () => await db.open())();
-
-  await db
-    .table(`chat-${userId}`)
-    .where('uuid')
-    .equals(ack.uuid)
-    .and((msg: MessageData) => msg.status !== 'read')
-    .modify({ status: ack.status, resent_timestamp: undefined })
-    .then(() => {
-      socket.emit('received ack', ack.uuid);
-    });
+  await DBController.updateMessageStatusWithAck(userId!, ack);
+  socket.emit('received ack', ack.uuid);
 });
-//TODO re-send sending messages on reconnection
+
+socket.on('keySharing', async (message: KeysSharing) => {
+  const userId = await getUserId(message.from);
+  keyStore.storeReceivedKey(message.PBK, userId!);
+
+  let keyPair: KeysPairs = await DBController.getKeyPairsByFriendId(userId!);
+  const friend: User = await DBController.getFriendById(userId!);
+});
+
 socket.on('connect', () => {
+  //TODO re-send sending messages on reconnection
   console.log('RECONNECT');
 });
 export const SocketContext = React.createContext(socket);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { db, User } from '../../util/db';
+import { DBController, User } from '../../util/db';
 
 import styles from './UserBadge.module.css';
 
@@ -11,16 +11,10 @@ const UserBadge = () => {
 
   useEffect(() => {
     const getUserData = async () => {
-      await (async () => await db.open())();
+      //await (async () => await DBController.db.open())();
       if (userId) {
-        const res = (await db
-          .table('friends')
-          .where('_id')
-          .equals(userId)
-          .toArray()) as Array<User>;
-        if (res.length < 0) return; // TODO Throw error
-
-        setName(res[0].name);
+        const friend = await DBController.getFriendById(userId!);
+        setName(friend.name);
       }
     };
     getUserData();

@@ -1,7 +1,7 @@
 // import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { db, Message as MessageData, User } from '../../util/db';
+import { DBController, Message as MessageData, User } from '../../util/db';
 import styles from './Message.module.css';
 
 const Message: React.FC<{ message: MessageData }> = ({ message }) => {
@@ -20,17 +20,8 @@ const Message: React.FC<{ message: MessageData }> = ({ message }) => {
   const getUserFromMessage = () => {
     if (message.type == 'sent') return setName('You');
 
-    if (userId) {
-      const res = db
-        .table('friends')
-        .where('_id')
-        .equals(userId)
-        .toArray()
-        .then((res: Array<User>) => {
-          if (res.length < 0) return; // TODO Throw error
-          setName(res[0].name);
-        });
-    }
+    if (userId)
+      DBController.getFriendById(userId!).then(friend => setName(friend.name));
   };
   useEffect(() => {
     getUserFromMessage();
