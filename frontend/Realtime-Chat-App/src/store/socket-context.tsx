@@ -38,7 +38,6 @@ socket.on('session', async data => {
   const messages: Array<MessageReceived> = data.messages;
   const acks: Array<MessageAck> = data.acks;
 
-  //TODO need to delete?? await (async () => await DBController.db.open())();
   let userId;
   //messages.map(msg => (msg.status = 'to read'));
   //? Save received messages to local db

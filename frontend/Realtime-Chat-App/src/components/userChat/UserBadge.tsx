@@ -11,7 +11,6 @@ const UserBadge = () => {
 
   useEffect(() => {
     const getUserData = async () => {
-      //await (async () => await DBController.db.open())();
       if (userId) {
         const friend = await DBController.getFriendById(userId!);
         setName(friend.name);

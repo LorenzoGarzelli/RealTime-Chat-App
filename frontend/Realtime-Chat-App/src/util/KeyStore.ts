@@ -11,7 +11,6 @@ class KeyStore {
   }
 
   async loadCryptographicKeys() {
-    //await (async () => await DBController.db.open())();
     const friends: User[] = await DBController.getFriends();
     if (friends.length <= 0) return;
 
@@ -172,7 +171,6 @@ class KeyStore {
     socket.emit('keySharing', { to, PBK });
   }
   private async storeKeyPair(keyPairs: KeysPairs) {
-    //await DBController.db.open();
     await DBController.saveKeyPairs(keyPairs);
   }
 
