@@ -1,13 +1,13 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState, useTransition } from 'react';
-import { User, DBController } from '../util/db';
-import { Friend } from './../types';
-import { keyStore } from '../util/KeyStore';
+import { useLiveQuery } from "dexie-react-hooks";
+import { useEffect, useState, useTransition } from "react";
+import { User, DBController } from "../util/db";
+import { Friend } from "./../types";
+import { keyStore } from "../util/KeyStore";
 
 export default function useFriends() {
   const [isLoading, setIsLoading] = useState(true);
   const [friendsList, setFriendsList] = useState<Array<User>>([]);
-  const url = 'api/v1/users/friends';
+  const url = "api/v1/users/friends";
 
   useEffect(() => {
     const loadLocalData = async () => {
@@ -21,7 +21,7 @@ export default function useFriends() {
     };
     const updateLocalData = async () => {
       try {
-        const response = await fetch(url, { credentials: 'include' });
+        const response = await fetch(url, { credentials: "include" });
         const { data } = await response.json();
         const { friends } = data;
         const updatedFriendsList = [];

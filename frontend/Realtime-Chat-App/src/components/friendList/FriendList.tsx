@@ -1,6 +1,6 @@
-import Friend from '../friend/Friend';
-import classes from './FriendList.module.css';
-import { Link } from 'react-router-dom';
+import Friend from "../friend/Friend";
+import classes from "./FriendList.module.css";
+import { Link } from "react-router-dom";
 import React, {
   memo,
   useContext,
@@ -8,12 +8,12 @@ import React, {
   useMemo,
   useState,
   useTransition,
-} from 'react';
-import { Socket } from 'socket.io-client';
-import { SocketContext } from '../../store/socket-context';
-import useFriends from '../../hooks/use-friends';
+} from "react";
+import { Socket } from "socket.io-client";
+import { SocketContext } from "../../store/socket-context";
+import useFriends from "../../hooks/use-friends";
 
-const FriendList: React.FC<{}> = memo(props => {
+const FriendList: React.FC<{}> = memo((props) => {
   const socket = useContext(SocketContext);
   const [friendsLinks, setFriendsLinks] = useState<JSX.Element[]>([]);
 
@@ -23,8 +23,12 @@ const FriendList: React.FC<{}> = memo(props => {
     if (friends.length < 1) return;
 
     setFriendsLinks(
-      friends.map(el => (
-        <Link to={`/chats/${el._id}`} key={el._id}>
+      friends.map((el) => (
+        <Link
+          to={`/chats/${el._id}`}
+          key={el._id}
+          className={classes["user-link"]}
+        >
           <Friend name={el.name} />
         </Link>
       ))
@@ -33,7 +37,7 @@ const FriendList: React.FC<{}> = memo(props => {
 
   return (
     <div className={classes.container}>
-      <ul className={classes['user-list']}>
+      <ul className={classes["user-list"]}>
         <li>{friendsLinks}</li>
       </ul>
     </div>

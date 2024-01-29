@@ -17,7 +17,6 @@
   bottom: 0;
   min-width: 100px;
   min-height: 70px;
-  /* border: 10px solid red; */
   background-color: var(--primary-color);
   display: flex;
   align-items: center;

@@ -16,3 +16,12 @@
 .user-list > li {
   list-style: none;
 }
+
+.user-link {
+  display: block;
+  /* border-top: 2px solid red; */
+}
+
+.user-list > li > *:first-child {
+  border-top: none;
+}

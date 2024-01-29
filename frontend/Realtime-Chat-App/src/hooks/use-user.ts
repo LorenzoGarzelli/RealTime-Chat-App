@@ -1,21 +1,21 @@
-import { redirect, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import useSWR from 'swr';
+import { redirect, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
 
 const fetcher = (...args: string[]) =>
   //@ts-ignore
   fetch(...args)
-    .then(res => {
+    .then((res) => {
       return res.json();
     })
-    .then(data => data);
+    .then((data) => data);
 
 export default function useUser({
-  redirectTo = '',
+  redirectTo = "",
   redirectIfFound = false,
 } = {}) {
   let navigate = useNavigate();
-  const { data, mutate } = useSWR('/api/v1/users/isLoggedIn', fetcher);
+  const { data, mutate } = useSWR("/api/v1/users/isLoggedIn", fetcher);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     if (data) setIsLoading(false);
@@ -24,10 +24,8 @@ export default function useUser({
       (redirectTo && !redirectIfFound && !data?.isLoggedIn) ||
       (redirectIfFound && data?.isLoggedIn)
     ) {
-      // redirect(redirectTo);
       navigate(redirectTo, { replace: true });
     }
-    // console.log(data);
   }, [data, redirectIfFound, redirectTo, mutate]);
 
   return { ...data, isLoading, mutate };

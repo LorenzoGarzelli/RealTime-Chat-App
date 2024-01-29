@@ -21,18 +21,8 @@
 
 * {
   box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
 }
-/* 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-*/
 body {
   margin: 0;
   padding: 0;
@@ -63,7 +53,7 @@ i {
   display: block;
   border: 1px solid rgb(229, 224, 224);
   border-radius: 80px !important;
-  font-family: 'Poppins', sans-serif !important;
+  font-family: "Poppins", sans-serif !important;
   width: 100%;
   min-width: 300px;
   margin: 0.8em 0;
