@@ -77,7 +77,11 @@ const UserChat = () => {
     await DBController.saveMessage(message, userId!);
     const roomId = (await DBController.getFriendById(userId!)).roomId;
 
-    const encryptedMessage = await keyStore.encrypt(messageTxt, userId!);
+    const encryptedMessage = await keyStore.encrypt(
+      messageTxt,
+      message.timestamp,
+      userId!
+    );
 
     const messageToSend: MessageSent = {
       to: roomId,

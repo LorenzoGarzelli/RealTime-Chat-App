@@ -1,7 +1,6 @@
-import { socket } from '../store/socket-context';
-import { DBController, KeysPairs, User } from './db';
+import { socket } from "../store/socket-context";
+import { DBController, KeysPairs, User } from "./db";
 
-//TODO Make IV Random
 class KeyStore {
   private keysMap: Map<string, CryptoKey>;
   private loading: Promise<void>;
@@ -28,22 +27,21 @@ class KeyStore {
           PBK: keys.publicKeyJwk,
           PVK: keys.privateKeyJwk,
         };
-        //TODO Share Generated PBK to server
+
+        //? Share Generated PBK to server
         await fetch(`api/v1/users/friendShips/shareKeys/${friend._id}`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
+            Accept: "application/json",
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ PBK: keyPairs.PBK }),
         });
+
         await this.storeKeyPair(keyPairs);
 
+        //? Share Generated PBK to friend via WebSocket
         this.sharePBK(keyPairs.PBK, friend._id);
-        continue;
-        //if (!keys.SharedKeyTimestamp) {
-        //sharedKey = await this.computeSharedKey(keys.FriendPBK, keys.PVK);
-        //if (keys.FriendPBK)
       }
 
       if (!keyPairs.shared && keyPairs.FriendPBK) {
@@ -57,24 +55,21 @@ class KeyStore {
         await DBController.updateKeyPairsByFriendId(friend._id, keyPairs);
       }
       if (keyPairs.shared) this.keysMap.set(friend._id, keyPairs.shared);
-      // if (!keyPairs.FriendPBK) {
-      //   this.sharePBK(keyPairs.PBK, friend.roomId);
-      // } else this.keysMap.set(friend._id, keyPairs.shared!);
     }
   }
   async generateKeyPair() {
     const keyPairs = await window.crypto.subtle.generateKey(
-      { name: 'ECDH', namedCurve: 'P-256' },
+      { name: "ECDH", namedCurve: "P-256" },
       true,
-      ['deriveKey', 'deriveBits']
+      ["deriveKey", "deriveBits"]
     );
 
     const publicKeyJwk = await window.crypto.subtle.exportKey(
-      'jwk',
+      "jwk",
       keyPairs.publicKey
     );
     const privateKeyJwk = await window.crypto.subtle.exportKey(
-      'jwk',
+      "jwk",
       keyPairs.privateKey
     );
 
@@ -82,43 +77,41 @@ class KeyStore {
   }
   async computeSharedKey(publicKeyJwk: JsonWebKey, privateKeyJwk: JsonWebKey) {
     const publicKey = await window.crypto.subtle.importKey(
-      'jwk',
+      "jwk",
       publicKeyJwk,
-      { name: 'ECDH', namedCurve: 'P-256' },
+      { name: "ECDH", namedCurve: "P-256" },
       true,
       []
     );
     const privateKey = await window.crypto.subtle.importKey(
-      'jwk',
+      "jwk",
       privateKeyJwk,
-      { name: 'ECDH', namedCurve: 'P-256' },
+      { name: "ECDH", namedCurve: "P-256" },
       true,
-      ['deriveKey', 'deriveBits']
+      ["deriveKey", "deriveBits"]
     );
     const sharedKey = await window.crypto.subtle.deriveKey(
-      { name: 'ECDH', public: publicKey },
+      { name: "ECDH", public: publicKey },
       privateKey,
-      { name: 'AES-GCM', length: 256 },
+      { name: "AES-GCM", length: 256 },
       true,
-      ['encrypt', 'decrypt']
+      ["encrypt", "decrypt"]
     );
     return sharedKey;
-    //return await window.crypto.subtle.exportKey('jwk', sharedKey);
   }
 
-  async encrypt(text: string, friendId: string) {
+  async encrypt(text: string, sendingTimestamp: string, friendId: string) {
     await this.loading;
     const sharedKey: CryptoKey | undefined = this.keysMap.get(friendId);
     if (!sharedKey) {
-      //TODO Throw Exception
-      throw new Error();
+      throw new Error("No sharedKey available for encryption");
     }
     const encodedText = new TextEncoder().encode(text);
 
     const encryptedData = await window.crypto.subtle.encrypt(
       {
-        name: 'AES-GCM',
-        iv: new TextEncoder().encode('Initial Vector'),
+        name: "AES-GCM",
+        iv: new TextEncoder().encode(sendingTimestamp),
       },
       sharedKey,
       encodedText
@@ -130,27 +123,26 @@ class KeyStore {
 
     return base64Data;
   }
-  async decrypt(base64encryptedText: string, friendId: string) {
+  async decrypt(
+    base64encryptedText: string,
+    receivingTimestamp: string,
+    friendId: string
+  ) {
     try {
-      //const message = JSON.parse(cipherMessageJson);
-      //const text = message.base64Data;
-      //const text = encryptedText;
-      // const InitializationVector = new Uint8Array(message.InitializationVector)
-      // .buffer;
       await this.loading;
       const sharedKey: CryptoKey | undefined = this.keysMap.get(friendId);
       if (!sharedKey) {
-        //TODO Throw Exception
+        throw new Error("No sharedKey available for decryption");
         return;
       }
       const decodedText = atob(base64encryptedText);
       const uintArray = new Uint8Array(
-        [...decodedText].map(char => char.charCodeAt(0))
+        [...decodedText].map((char) => char.charCodeAt(0))
       );
 
       const algorithm = {
-        name: 'AES-GCM',
-        iv: new TextEncoder().encode('Initial Vector'),
+        name: "AES-GCM",
+        iv: new TextEncoder().encode(receivingTimestamp),
       };
 
       const decryptedData = await window.crypto.subtle.decrypt(
@@ -167,8 +159,7 @@ class KeyStore {
   }
 
   async sharePBK(PBK: JsonWebKey, to: string) {
-    //TODO Add Callback
-    socket.emit('keySharing', { to, PBK });
+    socket.emit("keySharing", { to, PBK });
   }
   private async storeKeyPair(keyPairs: KeysPairs) {
     await DBController.saveKeyPairs(keyPairs);

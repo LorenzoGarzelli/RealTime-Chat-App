@@ -2,12 +2,7 @@ import React from "react";
 import { io } from "socket.io-client";
 import { MessageReceived, MessageAck, KeysSharing } from "../types";
 import { keyStore } from "../util/KeyStore";
-import {
-  User,
-  DBController,
-  Message as MessageData,
-  KeysPairs,
-} from "./../util/db";
+import { DBController, Message as MessageData } from "./../util/db";
 
 export const socket = io("http://localhost:8000", {
   transports: ["websocket"],
@@ -43,7 +38,11 @@ socket.on("session", async (data) => {
       const messageData: MessageData = {
         uuid: message.uuid,
         timestamp: message.timestamp,
-        content: await keyStore.decrypt(message.content, userId!),
+        content: await keyStore.decrypt(
+          message.content,
+          message.timestamp,
+          userId!
+        ),
         type: "received",
         status: "to read",
       };
@@ -78,7 +77,7 @@ socket.on("chat message", async (data: MessageReceived) => {
   const message: MessageData = {
     uuid: data.uuid,
     timestamp: data.timestamp,
-    content: await keyStore.decrypt(data.content, userId!),
+    content: await keyStore.decrypt(data.content, data.timestamp, userId!),
     type: "received",
     status: status,
   };
