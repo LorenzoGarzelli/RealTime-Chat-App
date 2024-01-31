@@ -1,5 +1,5 @@
-import Dexie, { Table } from 'dexie';
-import { MessageAck, MessageStatus, MessageType } from '../types';
+import Dexie, { Table } from "dexie";
+import { MessageAck, MessageStatus, MessageType } from "../types";
 export interface User {
   _id: string;
   name: string;
@@ -29,12 +29,11 @@ export type KeysPairs = {
   SharedKeyTimestamp?: number;
 };
 
-const MessageDBFields = '++id ,&uuid, status, type';
-const FriendDBField = '&_id,&roomId';
-const KeysPairDBField = '&_id, PBK, PVK, FriendPBK ,shared ';
+const MessageDBFields = "++id ,&uuid, status, type";
+const FriendDBField = "&_id,&roomId";
+const KeysPairDBField = "&_id, PBK, PVK, FriendPBK ,shared ";
 
 export class DbController {
-  private friends!: Table<User>;
   private db: Dexie;
   private static MESSAGE_TTL = 30; //TODO need to stay in env file
 
@@ -42,7 +41,7 @@ export class DbController {
   private schemaLoadingPromise: Promise<void>;
 
   constructor() {
-    this.db = new Dexie('chat-app', { autoOpen: true });
+    this.db = new Dexie("chat-app", { autoOpen: true });
     this.isSchemaLoaded = false;
     this.schemaLoadingPromise = this.loadCurrentSchema();
   }
@@ -57,13 +56,13 @@ export class DbController {
       //@ts-ignore
       result[name] = [
         schema.primKey.src,
-        ...schema.indexes.map(idx => idx.src),
-      ].join(',');
+        ...schema.indexes.map((idx) => idx.src),
+      ].join(",");
       return result;
     }, {});
 
-    console.log('Version: ' + this.db.verno);
-    console.log('Current Schema: ', currentSchema);
+    console.log("Version: " + this.db.verno);
+    console.log("Current Schema: ", currentSchema);
     this.isSchemaLoaded = true;
   }
   private async initializeDB() {
@@ -98,20 +97,20 @@ export class DbController {
       //@ts-ignore
       result[name] = [
         schema.primKey.src,
-        ...schema.indexes.map(idx => idx.src),
-      ].join(',');
+        ...schema.indexes.map((idx) => idx.src),
+      ].join(",");
       return result;
     }, {});
 
     if (Object.keys(currentSchema).includes(Object.keys(schemaChanges)[0]))
       return this.db;
 
-    console.log('Version: ' + this.db.verno);
-    console.log('Current Schema: ', currentSchema);
+    console.log("Version: " + this.db.verno);
+    console.log("Current Schema: ", currentSchema);
 
     this.db.close();
     const newDb = new Dexie(this.db.name);
-    newDb.on('blocked', () => false); // Silence console warning of blocked event.
+    newDb.on("blocked", () => false); // Silence console warning of blocked event.
 
     // Tell Dexie about current schema:
     newDb.version(this.db.verno).stores(currentSchema);
@@ -132,22 +131,22 @@ export class DbController {
   public async saveFriend(user: User) {
     await this.waitSchemaLoading();
     await this.db
-      .table('friends')
+      .table("friends")
       .add(user)
-      .catch('ConstraintError', ignored => {});
+      .catch("ConstraintError", (ignored) => {});
   }
   public async getFriends() {
     await this.waitSchemaLoading();
 
-    return await this.db.table('friends').toArray();
+    return await this.db.table("friends").toArray();
   }
 
   public async getFriendByRoomId(roomId: string): Promise<User> {
     await this.waitSchemaLoading();
 
     return await this.db
-      .table('friends')
-      .where('roomId')
+      .table("friends")
+      .where("roomId")
       .equals(roomId)
       .first();
   }
@@ -155,7 +154,7 @@ export class DbController {
   public async getFriendById(friendId: string): Promise<User> {
     await this.waitSchemaLoading();
 
-    return await this.db.table('friends').where('_id').equals(friendId).first();
+    return await this.db.table("friends").where("_id").equals(friendId).first();
     //   .toArray();
     // if (friendArray.length > 0) return;
   }
@@ -165,9 +164,9 @@ export class DbController {
 
     this.db
       .table(`chat-${userId}`)
-      .where('uuid')
+      .where("uuid")
       .equals(ack.uuid)
-      .and((msg: Message) => msg.status !== 'read')
+      .and((msg: Message) => msg.status !== "read")
       .modify({ status: ack.status });
     //.modify({ status: ack.status, resent_timestamp: undefined })
   }
@@ -176,8 +175,8 @@ export class DbController {
     await this.waitSchemaLoading();
 
     return await DBController.db
-      .table('keys')
-      .where('_id')
+      .table("keys")
+      .where("_id")
       .equals(friendId)
       .first();
   }
@@ -190,13 +189,13 @@ export class DbController {
   public async saveReceivedPBK(friendId: String, FriendPBK: JsonWebKey) {
     await this.waitSchemaLoading();
 
-    await this.db.table('keys').update(friendId, { FriendPBK: FriendPBK });
+    await this.db.table("keys").update(friendId, { FriendPBK: FriendPBK });
   }
 
   public async updateKeyPairsByFriendId(friendId: string, keyPairs: KeysPairs) {
     await this.waitSchemaLoading();
 
-    await this.db.table('keys').update(friendId, keyPairs);
+    await this.db.table("keys").update(friendId, keyPairs);
   }
 
   public async getChatMessagesByFriendId(friendId: string) {
@@ -214,7 +213,7 @@ export class DbController {
 
     this.db
       .table(`chat-${friendId}`)
-      .where('uuid')
+      .where("uuid")
       .equals(messageUUID)
       .modify(modification);
   }
@@ -224,9 +223,9 @@ export class DbController {
 
     return await this.db
       .table(`chat-${friendId}`)
-      .where('type')
-      .equals('received')
-      .and((msg: Message) => msg.status == 'to read')
+      .where("type")
+      .equals("received")
+      .and((msg: Message) => msg.status == "to read")
       .toArray();
   }
   public async getMessagesToResend(friendId: string) {
@@ -234,15 +233,21 @@ export class DbController {
 
     return await this.db
       .table(`chat-${friendId}`)
-      .where('type')
-      .equals('sent')
+      .where("type")
+      .equals("sent")
       .and(
         (msg: Message) =>
-          (msg.status == 'sent' || msg.status == 'sending') &&
+          (msg.status == "sent" || msg.status == "sending") &&
           (Date.now() - +msg.timestamp) / 1000 >= DbController.MESSAGE_TTL &&
           msg?.resent_timestamp == undefined
       )
       .toArray();
+  }
+
+  public async getLastChatMessage(friendId: string): Promise<Message> {
+    await this.waitSchemaLoading();
+
+    return await this.db.table(`chat-${friendId}`).orderBy("id").last();
   }
 }
 

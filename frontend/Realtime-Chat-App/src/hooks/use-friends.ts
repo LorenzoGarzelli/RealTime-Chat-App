@@ -32,9 +32,7 @@ export default function useFriends() {
           updatedFriendsList.push(friend.user);
         }
         setFriendsList(updatedFriendsList);
-      } catch (error) {
-        //TODO Manage Error
-      }
+      } catch (error) {}
     };
     loadLocalData();
     updateLocalData();

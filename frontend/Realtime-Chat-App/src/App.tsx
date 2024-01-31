@@ -15,20 +15,20 @@ import { ErrorBoundary } from "react-error-boundary";
 function App() {
   return (
     <div className="App">
-      {/* <ErrorBoundary FallbackComponent={errorHandler}> */}
-      <AnimatePresence>
-        <SocketContext.Provider value={socket}>
-          <Routes location={location} key={location.pathname}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Navigate to="/chats" />} />
+      <ErrorBoundary fallback={<p>Something went wrong</p>}>
+        <AnimatePresence>
+          <SocketContext.Provider value={socket}>
+            <Routes location={location} key={location.pathname}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<Navigate to="/chats" />} />
 
-            <Route path="/chats" element={<ChatsList />} />
+              <Route path="/chats" element={<ChatsList />} />
 
-            <Route path="chats/:userId" element={<Chat />} />
-          </Routes>
-        </SocketContext.Provider>
-      </AnimatePresence>
-      {/* </ErrorBoundary> */}
+              <Route path="chats/:userId" element={<Chat />} />
+            </Routes>
+          </SocketContext.Provider>
+        </AnimatePresence>
+      </ErrorBoundary>
     </div>
   );
 }

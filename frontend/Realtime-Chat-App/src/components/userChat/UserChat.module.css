@@ -21,6 +21,7 @@
   display: flex;
   align-items: center;
   justify-content: space-evenly;
+  margin-left: -3rem;
 }
 .messagesContainer {
   padding-top: 30px;

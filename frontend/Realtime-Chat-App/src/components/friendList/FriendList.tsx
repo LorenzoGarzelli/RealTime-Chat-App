@@ -1,14 +1,7 @@
 import Friend from "../friend/Friend";
 import classes from "./FriendList.module.css";
 import { Link } from "react-router-dom";
-import React, {
-  memo,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import React, { memo, useContext, useEffect, useState } from "react";
 import { Socket } from "socket.io-client";
 import { SocketContext } from "../../store/socket-context";
 import useFriends from "../../hooks/use-friends";
@@ -23,13 +16,13 @@ const FriendList: React.FC<{}> = memo((props) => {
     if (friends.length < 1) return;
 
     setFriendsLinks(
-      friends.map((el) => (
+      friends.map((user) => (
         <Link
-          to={`/chats/${el._id}`}
-          key={el._id}
+          to={`/chats/${user._id}`}
+          key={user._id}
           className={classes["user-link"]}
         >
-          <Friend name={el.name} />
+          <Friend user={user} />
         </Link>
       ))
     );

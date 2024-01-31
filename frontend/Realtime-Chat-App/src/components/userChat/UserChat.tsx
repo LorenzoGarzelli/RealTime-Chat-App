@@ -93,6 +93,7 @@ const UserChat = () => {
     sendMessage(messageToSend);
   };
 
+  //? send read  acks
   useEffectOnce(() => {
     const sendAcks = async () => {
       const messages: Array<MessageData> = await DBController.getMessagesToRead(
@@ -173,7 +174,6 @@ const UserChat = () => {
         <div className="FEED" ref={chatFeedRef} />
       </main>
       <div className={styles["input-bar"]}>
-        {/* <i className="input-bar__paper-clip-icon uil uil-paperclip"></i> */}
         <form onSubmit={handleMessageSubmit}>
           <input
             type="text"
