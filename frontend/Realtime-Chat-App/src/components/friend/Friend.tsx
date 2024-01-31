@@ -71,6 +71,10 @@ const Friend: React.FC<{ user: User }> = (props) => {
       const message = await DBController.getLastChatMessage(user._id);
       setLastMessageSent(message);
     };
+    DBController.registerChatUpdateHandlerByFriendId(
+      user._id,
+      updateLastMessage
+    );
 
     updateLastMessage();
   }, []);

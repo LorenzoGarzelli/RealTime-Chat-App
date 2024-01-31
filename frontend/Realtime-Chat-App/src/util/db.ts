@@ -249,6 +249,21 @@ export class DbController {
 
     return await this.db.table(`chat-${friendId}`).orderBy("id").last();
   }
+
+  public registerChatUpdateHandlerByFriendId(friendId: string, handler: any) {
+    this.db.table(`chat-${friendId}`).hook(
+      "updating",
+      handler
+      // function (
+      //   modifications: any,
+      //   primKey: any,
+      //   obj: any,
+      //   transaction: any
+      // ) {
+      //   console.log(modifications, primKey, obj);
+      // }
+    );
+  }
 }
 
 export const DBController = new DbController();
