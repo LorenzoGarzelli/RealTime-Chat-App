@@ -1,0 +1,53 @@
+.container {
+  min-height: 100%;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  min-width: 300px;
+  background-color: var(--primary-color);
+  padding: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.input-bar {
+  position: sticky;
+  bottom: 0;
+  min-width: 100px;
+  min-height: 70px;
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  margin-left: -3rem;
+}
+.messagesContainer {
+  padding-top: 30px;
+}
+form {
+  display: flex;
+}
+form,
+input {
+  width: 80%;
+  height: 50px;
+  background: none;
+  border: none;
+  font-size: 1em;
+  outline-width: 0;
+}
+
+form > button {
+  margin-left: 20px;
+  display: inline-block;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+main {
+  min-height: 90vh;
+  background-color: var(--secondary-color);
+}

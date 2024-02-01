@@ -1,0 +1,27 @@
+.container {
+  display: flex;
+  padding-top: 50%;
+  justify-content: center;
+  align-items: center;
+  min-height: 100% !important;
+}
+.spinner {
+  display: block;
+
+  width: 100px;
+  height: 100px;
+  border-radius: 100px;
+  border: 16px solid #646262; /* Light grey */
+  border-top: 16px solid purple; /* Blue */
+  /* background-color: white; */
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

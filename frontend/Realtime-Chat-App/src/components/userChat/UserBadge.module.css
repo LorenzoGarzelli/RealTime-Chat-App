@@ -1,0 +1,19 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-img {
+  width: 60px;
+  height: 60px;
+}
+
+.details > h2 {
+  margin: 0;
+  margin-bottom: 6px;
+}
+.details {
+  margin: 0;
+  margin-left: 2rem;
+}
