@@ -35,25 +35,30 @@ socket.on("session", async (data) => {
     for (let message of messages) {
       userId = await getUserId(message.from);
 
-      const messageData: MessageData = {
-        uuid: message.uuid,
-        timestamp: message.timestamp,
-        content: await keyStore.decrypt(
-          message.content,
-          message.timestamp,
-          userId!
-        ),
-        type: "received",
-        status: "to read",
-      };
-      await DBController.saveMessage(messageData, userId!);
+      try {
+        const messageData: MessageData = {
+          uuid: message.uuid,
+          timestamp: message.timestamp,
+          content: await keyStore.decrypt(
+            message.content,
+            message.timestamp,
+            userId!
+          ),
+          type: "received",
+          status: "to read",
+        };
+        await DBController.saveMessage(messageData, userId!);
 
-      socket.emit("messages ack", {
-        uuid: message.uuid,
-        to: message.from,
-        from: message.to,
-        status: "to read",
-      });
+        socket.emit("messages ack", {
+          uuid: message.uuid,
+          to: message.from,
+          from: message.to,
+          status: "to read",
+        });
+      } catch (err) {
+        console.error(err);
+        continue;
+      }
     }
 
   for (let ack of acks) {
@@ -74,22 +79,28 @@ socket.on("chat message", async (data: MessageReceived) => {
   const userId = await getUserId(data.from);
 
   const status = param == userId ? "read" : "to read";
-  const message: MessageData = {
-    uuid: data.uuid,
-    timestamp: data.timestamp,
-    content: await keyStore.decrypt(data.content, data.timestamp, userId!),
-    type: "received",
-    status: status,
-  };
 
-  await DBController.saveMessage(message, userId!);
+  try {
+    const message: MessageData = {
+      uuid: data.uuid,
+      timestamp: data.timestamp,
+      content: await keyStore.decrypt(data.content, data.timestamp, userId!),
+      type: "received",
+      status: status,
+    };
 
-  socket.emit("messages ack", {
-    uuid: data.uuid,
-    to: data.from,
-    from: data.to,
-    status: status,
-  });
+    await DBController.saveMessage(message, userId!);
+
+    socket.emit("messages ack", {
+      uuid: data.uuid,
+      to: data.from,
+      from: data.to,
+      status: status,
+    });
+  } catch (err) {
+    console.error(err);
+    return;
+  }
 });
 
 socket.on("messages ack", async (ack: MessageAck) => {
@@ -103,8 +114,8 @@ socket.on("keySharing", async (message: KeysSharing) => {
   keyStore.storeReceivedKey(message.PBK, userId!);
 });
 
-socket.on("connect", () => {
-  //TODO re-send sending messages on reconnection
-  console.log("RECONNECT");
-});
+// socket.on("connect", () => {
+//   //TODO re-send sending messages on reconnection
+//   console.log("RECONNECT");
+// });
 export const SocketContext = React.createContext(socket);

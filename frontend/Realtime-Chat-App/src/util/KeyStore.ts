@@ -5,11 +5,15 @@ class KeyStore {
   private keysMap: Map<string, CryptoKey>;
   private loading: Promise<void>;
   constructor() {
+    this.initialize();
+  }
+
+  private async initialize() {
     this.keysMap = new Map();
     this.loading = this.loadCryptographicKeys();
   }
 
-  async loadCryptographicKeys() {
+  private async loadCryptographicKeys() {
     const friends: User[] = await DBController.getFriends();
     if (friends.length <= 0) return;
 
@@ -38,7 +42,7 @@ class KeyStore {
           body: JSON.stringify({ PBK: keyPairs.PBK }),
         });
 
-        await this.storeKeyPair(keyPairs);
+        await DBController.saveKeyPairs(keyPairs);
 
         //? Share Generated PBK to friend via WebSocket
         this.sharePBK(keyPairs.PBK, friend._id);
@@ -57,7 +61,7 @@ class KeyStore {
       if (keyPairs.shared) this.keysMap.set(friend._id, keyPairs.shared);
     }
   }
-  async generateKeyPair() {
+  public async generateKeyPair() {
     const keyPairs = await window.crypto.subtle.generateKey(
       { name: "ECDH", namedCurve: "P-256" },
       true,
@@ -75,7 +79,10 @@ class KeyStore {
 
     return { publicKeyJwk, privateKeyJwk };
   }
-  async computeSharedKey(publicKeyJwk: JsonWebKey, privateKeyJwk: JsonWebKey) {
+  public async computeSharedKey(
+    publicKeyJwk: JsonWebKey,
+    privateKeyJwk: JsonWebKey
+  ) {
     const publicKey = await window.crypto.subtle.importKey(
       "jwk",
       publicKeyJwk,
@@ -100,30 +107,39 @@ class KeyStore {
     return sharedKey;
   }
 
-  async encrypt(text: string, sendingTimestamp: string, friendId: string) {
-    await this.loading;
-    const sharedKey: CryptoKey | undefined = this.keysMap.get(friendId);
-    if (!sharedKey) {
-      throw new Error("No sharedKey available for encryption");
+  public async encrypt(
+    text: string,
+    sendingTimestamp: string,
+    friendId: string
+  ) {
+    try {
+      await this.loading;
+      const sharedKey: CryptoKey | undefined = this.keysMap.get(friendId);
+      if (!sharedKey) {
+        throw new Error("No sharedKey available for encryption");
+      }
+      const encodedText = new TextEncoder().encode(text);
+
+      const encryptedData = await window.crypto.subtle.encrypt(
+        {
+          name: "AES-GCM",
+          iv: new TextEncoder().encode(sendingTimestamp),
+        },
+        sharedKey,
+        encodedText
+      );
+
+      const uintArray = new Uint8Array(encryptedData);
+      const string = String.fromCharCode.apply(null, Array(...uintArray));
+      const base64Data = btoa(string);
+
+      return base64Data;
+    } catch (err) {
+      this.initialize();
+      throw new Error("fatal error during decryption");
     }
-    const encodedText = new TextEncoder().encode(text);
-
-    const encryptedData = await window.crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: new TextEncoder().encode(sendingTimestamp),
-      },
-      sharedKey,
-      encodedText
-    );
-
-    const uintArray = new Uint8Array(encryptedData);
-    const string = String.fromCharCode.apply(null, Array(...uintArray));
-    const base64Data = btoa(string);
-
-    return base64Data;
   }
-  async decrypt(
+  public async decrypt(
     base64encryptedText: string,
     receivingTimestamp: string,
     friendId: string
@@ -153,21 +169,20 @@ class KeyStore {
       const message = new TextDecoder().decode(decryptedData);
       return message;
     } catch (err: any) {
-      console.error(err);
-      return "";
+      await DBController.deleteKeysByFriendId(friendId);
+      this.initialize();
+      throw new Error("fatal error during decryption");
     }
   }
-
-  async sharePBK(PBK: JsonWebKey, to: string) {
+  private async sharePBK(PBK: JsonWebKey, to: string) {
     socket.emit("keySharing", { to, PBK });
   }
-  private async storeKeyPair(keyPairs: KeysPairs) {
-    await DBController.saveKeyPairs(keyPairs);
-  }
 
-  async storeReceivedKey(FriendPBK: JsonWebKey, friendId: string) {
+  public async storeReceivedKey(FriendPBK: JsonWebKey, friendId: string) {
     await DBController.saveReceivedPBK(friendId, FriendPBK);
     const keyPairs = await await DBController.getKeyPairsByFriendId(friendId);
+    if (!keyPairs || !FriendPBK) return;
+
     keyPairs.shared = await this.computeSharedKey(
       keyPairs.FriendPBK!,
       keyPairs.PVK

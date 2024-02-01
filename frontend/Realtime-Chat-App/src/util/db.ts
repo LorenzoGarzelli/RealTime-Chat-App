@@ -191,6 +191,11 @@ export class DbController {
 
     await this.db.table("keys").update(friendId, { FriendPBK: FriendPBK });
   }
+  public async deleteKeysByFriendId(friendId: string) {
+    await this.waitSchemaLoading();
+
+    await this.db.table("keys").delete(friendId);
+  }
 
   public async updateKeyPairsByFriendId(friendId: string, keyPairs: KeysPairs) {
     await this.waitSchemaLoading();
