@@ -251,18 +251,7 @@ export class DbController {
   }
 
   public registerChatUpdateHandlerByFriendId(friendId: string, handler: any) {
-    this.db.table(`chat-${friendId}`).hook(
-      "updating",
-      handler
-      // function (
-      //   modifications: any,
-      //   primKey: any,
-      //   obj: any,
-      //   transaction: any
-      // ) {
-      //   console.log(modifications, primKey, obj);
-      // }
-    );
+    this.db.table(`chat-${friendId}`).hook("updating", handler);
   }
 }
 

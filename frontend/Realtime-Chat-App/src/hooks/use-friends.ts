@@ -3,9 +3,10 @@ import { useEffect, useState, useTransition } from "react";
 import { User, DBController } from "../util/db";
 import { Friend } from "./../types";
 import { keyStore } from "../util/KeyStore";
+import { useNavigate } from "react-router-dom";
 
 export default function useFriends() {
-  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   const [friendsList, setFriendsList] = useState<Array<User>>([]);
   const url = "api/v1/users/friends";
 
@@ -16,7 +17,7 @@ export default function useFriends() {
 
         setFriendsList(friends);
       } catch (err) {
-        // console.error(err);
+        console.error(err);
       }
     };
     const updateLocalData = async () => {
@@ -32,7 +33,9 @@ export default function useFriends() {
           updatedFriendsList.push(friend.user);
         }
         setFriendsList(updatedFriendsList);
-      } catch (error) {}
+      } catch (error) {
+        console.error(error);
+      }
     };
     loadLocalData();
     updateLocalData();

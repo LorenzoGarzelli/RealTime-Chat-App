@@ -133,7 +133,6 @@ class KeyStore {
       const sharedKey: CryptoKey | undefined = this.keysMap.get(friendId);
       if (!sharedKey) {
         throw new Error("No sharedKey available for decryption");
-        return;
       }
       const decodedText = atob(base64encryptedText);
       const uintArray = new Uint8Array(
@@ -154,7 +153,8 @@ class KeyStore {
       const message = new TextDecoder().decode(decryptedData);
       return message;
     } catch (err: any) {
-      return err.message;
+      console.error(err);
+      return "";
     }
   }
 

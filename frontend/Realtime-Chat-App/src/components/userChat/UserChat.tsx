@@ -32,7 +32,7 @@ const UserChat = () => {
         );
       }
     } catch (err) {
-      console.log("THIS", err);
+      console.error(err);
     }
   }, []);
 
