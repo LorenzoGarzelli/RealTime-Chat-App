@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { DBController, User } from '../../util/db';
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { DBController, User } from "../../util/db";
 
-import styles from './UserBadge.module.css';
+import styles from "./UserBadge.module.css";
 
 const UserBadge = () => {
   const { userId } = useParams();
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
 
   useEffect(() => {
     const getUserData = async () => {
@@ -24,12 +24,12 @@ const UserBadge = () => {
         <img
           src="./../../../user.png"
           alt=""
-          className={styles['profile-img']}
+          className={styles["profile-img"]}
         />
 
         <div className={styles.details}>
-          <h2 className={styles['contact-name']}>{name}</h2>
-          <span className={styles.status}>last seen 3 hours ago</span>
+          <h2 className={styles["contact-name"]}>{name}</h2>
+          {/* <span className={styles.status}>last seen 3 hours ago</span> */}
         </div>
       </div>
     </>

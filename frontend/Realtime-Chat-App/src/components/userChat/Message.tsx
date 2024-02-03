@@ -11,13 +11,14 @@ const Message: React.FC<{ message: MessageData }> = ({ message }) => {
   const { userId } = useParams();
   const [name, setName] = useState("");
 
-  const timeFormat = (date: Date) => {
-    function formatTwoDigits(n: number) {
-      return n < 10 ? "0" + n : n;
-    }
-    let hours = formatTwoDigits(date.getHours());
-    let minutes = formatTwoDigits(date.getMinutes());
-    return hours + ":" + minutes;
+  const formatDateTime = (date: Date) => {
+    return date.toLocaleDateString(navigator.language, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const getUserFromMessage = () => {
@@ -49,8 +50,7 @@ const Message: React.FC<{ message: MessageData }> = ({ message }) => {
                 {message.status == "sent" && SingleGrayTick()}
               </span>
             )}
-            <span className={styles.timestamp}>{`${timeFormat(
-              // new Date()
+            <span className={styles.timestamp}>{`${formatDateTime(
               new Date(+message.timestamp)
             )}`}</span>
           </div>
