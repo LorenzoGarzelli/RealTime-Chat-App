@@ -104,21 +104,19 @@ const LoginForm = () => {
           </div>
 
           <div className={styles["input-wrapper"]}>
-            <Link
+            {/* <Link
               className={`${styles["link"]} ${styles["link--right"]}`}
               to={"/"}
             >
               Forget password?
-            </Link>
+            </Link> */}
           </div>
           <button type="submit" className={styles["submit-button"]}>
-            Login
+            Login | Sign up *
           </button>
           <span className={styles["form-footer"]}>
-            Not registered yet?{" "}
-            <Link className={styles["link"]} to="/">
-              Create an Account
-            </Link>
+            (*) Not registered yet? at the time of subimit , the account will be
+            created
           </span>
         </>
       </form>

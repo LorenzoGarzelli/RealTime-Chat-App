@@ -7,7 +7,7 @@ form {
 label,
 h2,
 input {
-  color: black;
+  color: white !important;
 }
 
 .input {
@@ -31,9 +31,10 @@ input {
   border: 1px solid #d94a47;
 }
 .container {
-  background-color: white;
+  background-color: var(--secondary-color);
   width: 100%;
   padding: 5em;
+  padding-left: 2.5em;
 }
 .container > * {
   margin: 0 auto;
@@ -50,14 +51,16 @@ input {
   color: rgb(136, 133, 133);
 }
 .submit-button {
+  display: block;
   background-color: #5138ee;
   color: white;
   border-radius: 100px;
-  padding: 1.2em 8em;
+  padding: 1.2em; /*8em; */
   text-align: center;
   margin: 0 auto;
   margin-bottom: 20px;
-  width: 100%;
+  width: 60%;
+  min-width: 150px;
 }
 
 .link {
