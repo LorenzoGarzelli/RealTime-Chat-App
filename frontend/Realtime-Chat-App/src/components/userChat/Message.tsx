@@ -6,6 +6,7 @@ import styles from "./Message.module.css";
 import MultipleBlueTick from "../../assets/MultipleBlueTick";
 import SingleGrayTick from "../../assets/SingleGrayTick";
 import MultipleGrayTick from "../../assets/MultipleGrayTick";
+import PendingMessageIcon from "../../assets/PendingMessageIcon";
 
 const Message: React.FC<{ message: MessageData }> = ({ message }) => {
   const { userId } = useParams();
@@ -44,9 +45,7 @@ const Message: React.FC<{ message: MessageData }> = ({ message }) => {
               <span className={styles.tick}>
                 {message.status == "to read" && MultipleGrayTick()}
                 {message.status == "read" && MultipleBlueTick()}
-                {
-                  message.status == "sending" && "load" //TODO Add Loading icon (like WhatsApp)
-                }
+                {message.status == "sending" && PendingMessageIcon()}
                 {message.status == "sent" && SingleGrayTick()}
               </span>
             )}
