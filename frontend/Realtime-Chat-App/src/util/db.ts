@@ -35,7 +35,7 @@ const KeysPairDBField = "&_id, PBK, PVK, FriendPBK ,shared ";
 
 export class DbController {
   private db: Dexie;
-  private static MESSAGE_TTL = 30; //TODO need to stay in env file
+  private static MESSAGE_TTL = import.meta.env.VITE_MESSAGE_TTL || 86400;
 
   private isSchemaLoaded: boolean;
   private schemaLoadingPromise: Promise<void>;

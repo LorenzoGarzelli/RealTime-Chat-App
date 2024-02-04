@@ -8,7 +8,6 @@ import SingleGrayTick from "../../assets/SingleGrayTick";
 import PendingMessageIcon from "../../assets/PendingMessageIcon";
 
 const Friend: React.FC<{ user: User }> = (props) => {
-  //TODO add last message Preview
   const { user } = props;
 
   const [lastMessageSent, setLastMessageSent] = useState<Message>();

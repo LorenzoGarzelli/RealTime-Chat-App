@@ -1,8 +1,8 @@
-import { User } from './util/db';
+import { User } from "./util/db";
 export type Friend = {
-  status: ['bonded', 'pending'];
+  status: ["bonded", "pending"];
   user: User;
-  PBK: string; //TODOD
+  PBK: string;
 };
 
 export type MessageReceived = {
@@ -34,6 +34,6 @@ export type KeysSharing = {
   from: string;
 };
 
-export type MessageStatus = 'read' | 'to read' | 'sent' | 'sending';
+export type MessageStatus = "read" | "to read" | "sent" | "sending";
 
-export type MessageType = 'received' | 'sent';
+export type MessageType = "received" | "sent";
