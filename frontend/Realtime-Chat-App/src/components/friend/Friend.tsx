@@ -5,9 +5,9 @@ import { DBController, Message, User } from "../../util/db";
 import MultipleGrayTick from "../../assets/MultipleGrayTick";
 import MultipleBlueTick from "../../assets/MultipleBlueTick";
 import SingleGrayTick from "../../assets/SingleGrayTick";
+import PendingMessageIcon from "../../assets/PendingMessageIcon";
 
 const Friend: React.FC<{ user: User }> = (props) => {
-  //TODO add last message Preview
   const { user } = props;
 
   const [lastMessageSent, setLastMessageSent] = useState<Message>();
@@ -95,9 +95,7 @@ const Friend: React.FC<{ user: User }> = (props) => {
           <span className={classes.tick}>
             {lastMessageSent.status == "to read" && MultipleGrayTick()}
             {lastMessageSent.status == "read" && MultipleBlueTick()}
-            {
-              lastMessageSent.status == "sending" && "load" //TODO Add Loading icon (like WhatsApp)
-            }
+            {lastMessageSent.status == "sending" && PendingMessageIcon()}
             {lastMessageSent.status == "sent" && SingleGrayTick()}
           </span>
         )}

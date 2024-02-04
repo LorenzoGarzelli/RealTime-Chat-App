@@ -15,6 +15,7 @@
 }
 .timestamp {
   color: #9a9a9a;
+  font-size: 0.8em;
 }
 .tick {
   top: 2px;

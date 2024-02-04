@@ -6,18 +6,20 @@ import styles from "./Message.module.css";
 import MultipleBlueTick from "../../assets/MultipleBlueTick";
 import SingleGrayTick from "../../assets/SingleGrayTick";
 import MultipleGrayTick from "../../assets/MultipleGrayTick";
+import PendingMessageIcon from "../../assets/PendingMessageIcon";
 
 const Message: React.FC<{ message: MessageData }> = ({ message }) => {
   const { userId } = useParams();
   const [name, setName] = useState("");
 
-  const timeFormat = (date: Date) => {
-    function formatTwoDigits(n: number) {
-      return n < 10 ? "0" + n : n;
-    }
-    let hours = formatTwoDigits(date.getHours());
-    let minutes = formatTwoDigits(date.getMinutes());
-    return hours + ":" + minutes;
+  const formatDateTime = (date: Date) => {
+    return date.toLocaleDateString(navigator.language, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const getUserFromMessage = () => {
@@ -43,14 +45,11 @@ const Message: React.FC<{ message: MessageData }> = ({ message }) => {
               <span className={styles.tick}>
                 {message.status == "to read" && MultipleGrayTick()}
                 {message.status == "read" && MultipleBlueTick()}
-                {
-                  message.status == "sending" && "load" //TODO Add Loading icon (like WhatsApp)
-                }
+                {message.status == "sending" && PendingMessageIcon()}
                 {message.status == "sent" && SingleGrayTick()}
               </span>
             )}
-            <span className={styles.timestamp}>{`${timeFormat(
-              // new Date()
+            <span className={styles.timestamp}>{`${formatDateTime(
               new Date(+message.timestamp)
             )}`}</span>
           </div>
