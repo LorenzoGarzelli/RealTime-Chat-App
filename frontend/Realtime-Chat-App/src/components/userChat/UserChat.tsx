@@ -130,6 +130,12 @@ const UserChat = () => {
       messages?.forEach((msg) => sendMessage({ ...msg, to: "" }, true));
     };
     resendMessages();
+
+    socket.on("connect", async () => {
+      //TODO re-send sending messages on reconnection
+      console.log("RECONNECT");
+      resendMessages();
+    });
   });
 
   //? Auto-scrolling down on messages

@@ -114,8 +114,13 @@ socket.on("keySharing", async (message: KeysSharing) => {
   keyStore.storeReceivedKey(message.PBK, userId!);
 });
 
-// socket.on("connect", () => {
-//   //TODO re-send sending messages on reconnection
-//   console.log("RECONNECT");
-// });
+/*socket.on("connect", async () => {
+  //TODO re-send sending messages on reconnection
+  console.log("RECONNECT");
+  const messages: Array<MessageData> = await DBController.getMessagesToResend(
+    userId!
+  );
+  console.log("TO RESEND", messages);
+  messages?.forEach((msg) => sendMessage({ ...msg, to: "" }, true));
+});*/
 export const SocketContext = React.createContext(socket);

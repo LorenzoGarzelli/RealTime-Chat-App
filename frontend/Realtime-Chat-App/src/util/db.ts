@@ -242,9 +242,10 @@ export class DbController {
       .equals("sent")
       .and(
         (msg: Message) =>
-          (msg.status == "sent" || msg.status == "sending") &&
-          (Date.now() - +msg.timestamp) / 1000 >= DbController.MESSAGE_TTL &&
-          msg?.resent_timestamp == undefined
+          msg.status == "sending" ||
+          (msg.status == "sent" &&
+            (Date.now() - +msg.timestamp) / 1000 >= DbController.MESSAGE_TTL &&
+            msg?.resent_timestamp == undefined)
       )
       .toArray();
   }
