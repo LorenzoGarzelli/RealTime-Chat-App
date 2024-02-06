@@ -35,3 +35,15 @@ This project is composed of both a backend (written in Express + TypeScript) and
 - React
 - SWR (React Hooks for Data Fetching)
 - Dexie.js (a wrapper for indexedDB, used for storing chat messages and other data(such as: cryptographic keys, roomId for WS connections, ecc...))
+
+## End-to-end encryption Overview
+
+In this chat app, the end-to-end encryption has been implemented, using the **ECDH** (Elliptic-curve Diffie–Hellman) for the key agreement protocol and **AES-GCM** (AES in Galois/Counter Mode) for authenticated encryption protocol.
+
+Brief overview of how end-to-end encryption works in this chat app:
+
+- **Key Generation**: Each user has a unique pair of cryptographic keys for each friendship ( a public key and a private key). The public key is shared with the server and with the friend via WS (so if the friend is online , once he receive the public key, recomputes the shared key) , while the private key is kept secret on the user device.
+
+- **Shared Key Derivation**: Each user, using their own private key and the public key (of the friend), each party computes a shared key, for symmetric encryption-decryption
+
+- **Encryption / Decryption**: Once the shared key has been derived, it is utilized by both friends to encrypt and decrypt all messages they exchange with each other
