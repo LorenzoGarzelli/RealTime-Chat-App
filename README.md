@@ -1,6 +1,8 @@
 # RealTime ChatApp with end-to-end encryption
 
-![Logo](./logo.jpeg)
+<p align="center">
+  <img width="300"   src='./logo.jpeg'>
+</p>
 
 This project aimed to create a real-time (simplified) messaging system that uses end-to-end encryption mechanisms to ensure confidentiality and privacy of communications among users.
 This project is composed of both a backend (written in Express + TypeScript) and a frontend part (written in React + TypeScript).
@@ -32,4 +34,4 @@ This project is composed of both a backend (written in Express + TypeScript) and
 
 - React
 - SWR (React Hooks for Data Fetching)
-- Dexie.js (used for storing chat messages and other data(such as: cryptographic keys, roomId for WS connections, ecc...))
+- Dexie.js (a wrapper for indexedDB, used for storing chat messages and other data(such as: cryptographic keys, roomId for WS connections, ecc...))
